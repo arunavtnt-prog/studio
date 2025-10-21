@@ -1,0 +1,24 @@
+# AI/LLM Libraries
+openai>=1.12.0
+anthropic>=0.18.0
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Document Generation
+markdown>=3.5.0
+weasyprint>=60.0
+
+# PDF Dependencies (for WeasyPrint)
+Pillow>=10.0.0
+cffi>=1.15.0
+pycairo>=1.24.0
+cairocffi>=1.6.0
+
+# Utilities
+python-dateutil>=2.8.0
