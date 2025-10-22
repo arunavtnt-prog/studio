@@ -1,10 +1,20 @@
 """
 Data visualization module for business plan charts and graphs.
+
+IMPORTANT: This module uses the Agg (non-GUI) backend for Matplotlib to avoid
+threading issues on macOS and enable headless operation in web/batch contexts.
 """
 
 import os
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
+
+# CRITICAL: Set non-GUI backend BEFORE importing pyplot
+# This prevents "NSWindow should only be instantiated on the main thread!" errors on macOS
+# and allows charts to be generated in Flask/threading contexts
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np

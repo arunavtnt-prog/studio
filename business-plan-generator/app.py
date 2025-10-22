@@ -3,6 +3,11 @@ Flask Web Application for Business Plan Generator
 Simple, user-friendly interface for non-technical users.
 """
 
+# CRITICAL: Set Matplotlib backend BEFORE any imports that might use it
+# This prevents macOS threading errors when generating charts in Flask
+import matplotlib
+matplotlib.use('Agg')
+
 import os
 import json
 import traceback

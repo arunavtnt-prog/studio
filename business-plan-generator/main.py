@@ -6,6 +6,11 @@ An AI-powered business plan generation system for NYC-based brand accelerators.
 Generates comprehensive, investor-ready business plans with professional branding.
 """
 
+# CRITICAL: Set Matplotlib backend BEFORE any imports
+# Ensures charts are generated as files, not GUI windows
+import matplotlib
+matplotlib.use('Agg')
+
 import argparse
 import sys
 from pathlib import Path
