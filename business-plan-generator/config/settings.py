@@ -3,8 +3,17 @@ Application settings and configuration.
 """
 
 import os
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional, List
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).parent.parent / '.env'
+    load_dotenv(env_path)
+except ImportError:
+    pass  # dotenv not installed, will use system env vars
 
 
 @dataclass

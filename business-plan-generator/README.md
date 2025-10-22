@@ -2,6 +2,30 @@
 
 An AI-powered, end-to-end automation system that generates comprehensive, investor-ready business plans with professional NYC-themed branding. Built for brand accelerators to transform creator application forms into 50+ page strategic business plans with data visualizations and premium PDF output.
 
+## 🌐 Web Interface Available!
+
+**New!** User-friendly web interface perfect for non-technical users:
+
+```bash
+# Start the web interface
+./start_web.sh        # Mac/Linux
+start_web.bat         # Windows
+
+# Then open: http://localhost:5000
+```
+
+**Features:**
+- 📝 Easy form-based input (no coding required)
+- 📁 Drag-and-drop file upload
+- 👀 Preview executive summaries instantly
+- 💾 Auto-save your work
+- 📊 Download Markdown, PDF, and Pitch Deck
+- 🎨 Beautiful NYC-themed interface
+
+**For complete web UI instructions, see [WEB_UI_README.md](WEB_UI_README.md)**
+
+---
+
 ## Features
 
 - **Multi-Format Input Support**: Accepts JSON, CSV, and plain text input files
@@ -79,13 +103,28 @@ ANTHROPIC_API_KEY=your-anthropic-api-key-here
 
 ## Quick Start
 
-### 1. Validate Environment
+### Option 1: Web Interface (Easiest!)
+
+```bash
+# Start the web server
+./start_web.sh        # Mac/Linux
+start_web.bat         # Windows
+
+# Open http://localhost:5000 in your browser
+# Fill out the form and generate your plan!
+```
+
+See [WEB_UI_README.md](WEB_UI_README.md) for complete web interface guide.
+
+### Option 2: Command Line
+
+#### 1. Validate Environment
 
 ```bash
 python main.py --validate
 ```
 
-### 2. Generate Your First Business Plan
+#### 2. Generate Your First Business Plan
 
 ```bash
 python main.py sample_data/sample_input.json
@@ -97,7 +136,7 @@ This will:
 - Create data visualizations
 - Output both Markdown and PDF files in the `output/` directory
 
-### 3. View Output
+#### 3. View Output
 
 ```bash
 ls -lh output/

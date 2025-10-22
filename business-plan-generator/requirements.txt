@@ -20,5 +20,9 @@ cffi>=1.15.0
 pycairo>=1.24.0
 cairocffi>=1.6.0
 
+# Web Framework
+Flask>=3.0.0
+python-dotenv>=1.0.0
+
 # Utilities
 python-dateutil>=2.8.0
