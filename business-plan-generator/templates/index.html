@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}Create Business Plan - Form Input{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Create Your Business Plan</h2>
+    <p>Fill out the form below to generate a comprehensive, investor-ready business plan</p>
+</div>
+
+<div class="form-container">
+    <form id="businessPlanForm">
+        <!-- Personal Information -->
+        <div class="section-card">
+            <h3 class="section-title">👤 Personal Information</h3>
+            <div class="form-grid">
+                <div class="form-group required">
+                    <label for="full_name">Full Name *</label>
+                    <input type="text" id="full_name" name="full_name" required placeholder="Jane Doe">
+                </div>
+                <div class="form-group required">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" required placeholder="jane@example.com">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="career_milestones">Career Milestones</label>
+                <textarea id="career_milestones" name="career_milestones" rows="3" placeholder="15 years in fashion retail, former VP of Marketing at luxury brand house..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="personal_turning_points">Personal Turning Points</label>
+                <textarea id="personal_turning_points" name="personal_turning_points" rows="3" placeholder="Grew up in Brooklyn, witnessed transformation of local artisan markets..."></textarea>
+            </div>
+        </div>
+
+        <!-- Venture Information -->
+        <div class="section-card">
+            <h3 class="section-title">🚀 Venture Information</h3>
+            <div class="form-group required">
+                <label for="venture_vision">Venture Vision *</label>
+                <input type="text" id="venture_vision" name="venture_vision" required placeholder="AI-powered sustainable fashion platform">
+            </div>
+            <div class="form-grid">
+                <div class="form-group required">
+                    <label for="target_industry">Target Industry *</label>
+                    <input type="text" id="target_industry" name="target_industry" required placeholder="Fashion Tech, Sustainable Fashion">
+                </div>
+                <div class="form-group required">
+                    <label for="target_audience">Target Audience *</label>
+                    <input type="text" id="target_audience" name="target_audience" required placeholder="Eco-conscious millennials, 25-45">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="demographic_profile">Demographic Profile</label>
+                <textarea id="demographic_profile" name="demographic_profile" rows="3" placeholder="College-educated, household income $75K-150K, living in major metropolitan areas..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="audience_pain_points">Audience Pain Points</label>
+                <textarea id="audience_pain_points" name="audience_pain_points" rows="3" placeholder="Difficulty discovering authentic products, lack of transparency..."></textarea>
+            </div>
+        </div>
+
+        <!-- Competitive Analysis -->
+        <div class="section-card">
+            <h3 class="section-title">🎯 Competitive Analysis</h3>
+            <div class="form-group required">
+                <label for="unique_value_proposition">Unique Value Proposition *</label>
+                <textarea id="unique_value_proposition" name="unique_value_proposition" rows="3" required placeholder="We connect conscious consumers with vetted artisan creators..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="competitive_differentiation">Competitive Differentiation</label>
+                <textarea id="competitive_differentiation" name="competitive_differentiation" rows="3" placeholder="Unlike competitors, we curate premium products with verified sustainability..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="competitors_monitored">Competitors Being Monitored</label>
+                <input type="text" id="competitors_monitored" name="competitors_monitored" placeholder="Etsy, Faire, The Citizenry, etc.">
+            </div>
+        </div>
+
+        <!-- Audience Details -->
+        <div class="section-card">
+            <h3 class="section-title">👥 Audience Details</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="target_demographic_age">Age Range</label>
+                    <input type="text" id="target_demographic_age" name="target_demographic_age" placeholder="25-45 years old">
+                </div>
+                <div class="form-group">
+                    <label for="audience_gender_profile">Gender Profile</label>
+                    <input type="text" id="audience_gender_profile" name="audience_gender_profile" placeholder="70% women, 25% men, 5% non-binary">
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="audience_marital_status">Marital Status</label>
+                    <input type="text" id="audience_marital_status" name="audience_marital_status" placeholder="40% single, 45% married, 15% other">
+                </div>
+                <div class="form-group">
+                    <label for="audience_discovery_methods">Discovery Methods</label>
+                    <input type="text" id="audience_discovery_methods" name="audience_discovery_methods" placeholder="Instagram, Pinterest, Google, word-of-mouth">
+                </div>
+            </div>
+        </div>
+
+        <!-- Branding -->
+        <div class="section-card">
+            <h3 class="section-title">🎨 Branding</h3>
+            <div class="form-group">
+                <label for="brand_image">Brand Image</label>
+                <input type="text" id="brand_image" name="brand_image" placeholder="Premium, authentic, sustainable, sophisticated">
+            </div>
+            <div class="form-group">
+                <label for="brand_inspirations">Brand Inspirations</label>
+                <input type="text" id="brand_inspirations" name="brand_inspirations" placeholder="Warby Parker, Glossier, Reformation">
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="brand_personality">Brand Personality</label>
+                    <input type="text" id="brand_personality" name="brand_personality" placeholder="Authentic, warm, sophisticated">
+                </div>
+                <div class="form-group">
+                    <label for="brand_emotions">Brand Emotions</label>
+                    <input type="text" id="brand_emotions" name="brand_emotions" placeholder="Inspired, empowered, confident">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="brand_values">Brand Values</label>
+                <input type="text" id="brand_values" name="brand_values" placeholder="Sustainability, authenticity, transparency">
+            </div>
+        </div>
+
+        <!-- Growth & Strategy -->
+        <div class="section-card">
+            <h3 class="section-title">📈 Growth & Strategy</h3>
+            <div class="form-group">
+                <label for="scaling_goals">Scaling Goals</label>
+                <textarea id="scaling_goals" name="scaling_goals" rows="3" placeholder="Year 1: $1M GMV, Year 2: $5M GMV, Year 3: $25M GMV"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="growth_strategy">Growth Strategy</label>
+                <textarea id="growth_strategy" name="growth_strategy" rows="3" placeholder="Multi-channel: Instagram, influencer partnerships, pop-up experiences..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="brand_evolution_vision">Brand Evolution Vision</label>
+                <textarea id="brand_evolution_vision" name="brand_evolution_vision" rows="3" placeholder="Start as marketplace, evolve to full lifestyle brand..."></textarea>
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="section-card">
+            <h3 class="section-title">📝 Additional Information</h3>
+            <div class="form-group">
+                <label for="deadlines_milestones">Deadlines & Milestones</label>
+                <textarea id="deadlines_milestones" name="deadlines_milestones" rows="3" placeholder="Q1 2025: Launch MVP, Q2 2025: First 1K customers..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="other_info">Other Information</label>
+                <textarea id="other_info" name="other_info" rows="3" placeholder="Any other relevant information..."></textarea>
+            </div>
+        </div>
+
+        <!-- Generation Options -->
+        <div class="section-card">
+            <h3 class="section-title">⚙️ Generation Options</h3>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="generate_pdf" checked>
+                    Generate PDF (in addition to Markdown)
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="generate_pitch">
+                    Generate Pitch Deck PDF
+                </label>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button type="button" class="btn btn-secondary" onclick="generatePreview()">
+                Preview Executive Summary
+            </button>
+            <button type="submit" class="btn btn-primary">
+                Generate Business Plan
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Progress Modal -->
+<div id="progressModal" class="modal">
+    <div class="modal-content">
+        <h3>Generating Business Plan...</h3>
+        <div class="progress-bar">
+            <div class="progress-bar-fill"></div>
+        </div>
+        <p id="progressText">Please wait, this may take 10-20 minutes...</p>
+        <p class="progress-note">AI is generating 50+ pages of strategic content and visualizations</p>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="modal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3>Executive Summary Preview</h3>
+            <button class="modal-close" onclick="closePreview()">&times;</button>
+        </div>
+        <div id="previewContent" class="preview-content">
+            <!-- Preview content will be inserted here -->
+        </div>
+    </div>
+</div>
+
+<!-- Results Modal -->
+<div id="resultsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✅ Business Plan Generated!</h3>
+            <button class="modal-close" onclick="closeResults()">&times;</button>
+        </div>
+        <div id="resultsContent" class="results-content">
+            <!-- Results will be inserted here -->
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div id="errorModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>❌ Error</h3>
+            <button class="modal-close" onclick="closeError()">&times;</button>
+        </div>
+        <div id="errorContent" class="error-content">
+            <!-- Error message will be inserted here -->
+        </div>
+        <button class="btn btn-secondary" onclick="closeError()">Close</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Form submission
+document.getElementById('businessPlanForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+
+    // Show progress modal
+    showProgress();
+
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        hideProgress();
+
+        if (result.success) {
+            showResults(result.files);
+        } else {
+            showError(result.message);
+        }
+    } catch (error) {
+        hideProgress();
+        showError('Failed to generate business plan: ' + error.message);
+    }
+});
+
+// Preview executive summary
+async function generatePreview() {
+    const formData = new FormData(document.getElementById('businessPlanForm'));
+
+    showProgress('Generating preview...');
+
+    try {
+        const response = await fetch('/api/executive-summary', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        hideProgress();
+
+        if (result.success) {
+            showPreview(result.summary);
+        } else {
+            showError(result.message);
+        }
+    } catch (error) {
+        hideProgress();
+        showError('Failed to generate preview: ' + error.message);
+    }
+}
+
+function showProgress(text = 'Generating business plan...') {
+    document.getElementById('progressText').textContent = text;
+    document.getElementById('progressModal').classList.add('active');
+}
+
+function hideProgress() {
+    document.getElementById('progressModal').classList.remove('active');
+}
+
+function showPreview(content) {
+    // Convert markdown to HTML (basic conversion)
+    const html = content.replace(/\n/g, '<br>');
+    document.getElementById('previewContent').innerHTML = '<pre>' + html + '</pre>';
+    document.getElementById('previewModal').classList.add('active');
+}
+
+function closePreview() {
+    document.getElementById('previewModal').classList.remove('active');
+}
+
+function showResults(files) {
+    let html = '<div class="download-section">';
+
+    if (files.markdown) {
+        html += `
+            <div class="download-item">
+                <div class="download-icon">📄</div>
+                <div class="download-info">
+                    <h4>Markdown Document</h4>
+                    <p>Editable business plan</p>
+                </div>
+                <a href="/api/download/markdown" class="btn btn-primary btn-sm">Download</a>
+            </div>
+        `;
+    }
+
+    if (files.pdf) {
+        html += `
+            <div class="download-item">
+                <div class="download-icon">📊</div>
+                <div class="download-info">
+                    <h4>PDF Document</h4>
+                    <p>Investor-ready business plan</p>
+                </div>
+                <a href="/api/download/pdf" class="btn btn-primary btn-sm">Download</a>
+            </div>
+        `;
+    }
+
+    if (files.pitch_deck) {
+        html += `
+            <div class="download-item">
+                <div class="download-icon">🎯</div>
+                <div class="download-info">
+                    <h4>Pitch Deck</h4>
+                    <p>Presentation slides</p>
+                </div>
+                <a href="/api/download/pitch_deck" class="btn btn-primary btn-sm">Download</a>
+            </div>
+        `;
+    }
+
+    html += '</div>';
+    html += '<p class="results-note">Your business plan has been generated successfully! Files are ready to download.</p>';
+
+    document.getElementById('resultsContent').innerHTML = html;
+    document.getElementById('resultsModal').classList.add('active');
+}
+
+function closeResults() {
+    document.getElementById('resultsModal').classList.remove('active');
+}
+
+function showError(message) {
+    document.getElementById('errorContent').innerHTML = `<p>${message}</p>`;
+    document.getElementById('errorModal').classList.add('active');
+}
+
+function closeError() {
+    document.getElementById('errorModal').classList.remove('active');
+}
+</script>
+{% endblock %}

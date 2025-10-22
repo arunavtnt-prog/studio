@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Create Business Plan - File Upload{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Upload Application File</h2>
+    <p>Upload a JSON, CSV, or TXT file with your business information</p>
+</div>
+
+<div class="upload-container">
+    <div class="upload-card">
+        <form id="uploadForm">
+            <div class="upload-zone" id="uploadZone">
+                <div class="upload-icon">📁</div>
+                <h3>Drag and drop your file here</h3>
+                <p>or click to browse</p>
+                <input type="file" id="fileInput" name="file" accept=".json,.csv,.txt" hidden>
+                <p class="upload-hint">Supported formats: JSON, CSV, TXT</p>
+            </div>
+
+            <div id="fileInfo" class="file-info" style="display: none;">
+                <div class="file-details">
+                    <span class="file-icon">📄</span>
+                    <span id="fileName"></span>
+                    <button type="button" class="btn-remove" onclick="removeFile()">&times;</button>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3 class="section-title">⚙️ Generation Options</h3>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="generate_pdf" checked>
+                        Generate PDF (in addition to Markdown)
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="generate_pitch">
+                        Generate Pitch Deck PDF
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-large" disabled id="generateBtn">
+                Generate Business Plan
+            </button>
+        </form>
+    </div>
+
+    <div class="info-card">
+        <h3>📋 File Format Examples</h3>
+
+        <div class="format-section">
+            <h4>JSON Format</h4>
+            <pre class="code-block">{
+  "full_name": "Jane Doe",
+  "email": "jane@example.com",
+  "venture_vision": "AI-powered platform",
+  "target_industry": "Fashion Tech",
+  "target_audience": "Millennials",
+  ...
+}</pre>
+        </div>
+
+        <div class="format-section">
+            <h4>CSV Format</h4>
+            <pre class="code-block">full_name,email,venture_vision,...
+"Jane Doe","jane@example.com","AI platform",...</pre>
+        </div>
+
+        <div class="format-section">
+            <h4>Plain Text Format</h4>
+            <pre class="code-block">Full Name: Jane Doe
+Email: jane@example.com
+Venture Vision: AI-powered platform
+Target Industry: Fashion Tech
+...</pre>
+        </div>
+
+        <div class="sample-files">
+            <h4>Sample Files</h4>
+            <p>Download sample files to see the format:</p>
+            <ul>
+                <li><a href="/static/samples/sample.json" download>📄 sample.json</a></li>
+                <li><a href="/static/samples/sample.csv" download>📄 sample.csv</a></li>
+                <li><a href="/static/samples/sample.txt" download>📄 sample.txt</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div id="progressModal" class="modal">
+    <div class="modal-content">
+        <h3>Generating Business Plan...</h3>
+        <div class="progress-bar">
+            <div class="progress-bar-fill"></div>
+        </div>
+        <p id="progressText">Please wait, this may take 10-20 minutes...</p>
+        <p class="progress-note">AI is generating 50+ pages of strategic content and visualizations</p>
+    </div>
+</div>
+
+<!-- Results Modal -->
+<div id="resultsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✅ Business Plan Generated!</h3>
+            <button class="modal-close" onclick="closeResults()">&times;</button>
+        </div>
+        <div id="resultsContent" class="results-content">
+            <!-- Results will be inserted here -->
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div id="errorModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>❌ Error</h3>
+            <button class="modal-close" onclick="closeError()">&times;</button>
+        </div>
+        <div id="errorContent" class="error-content">
+            <!-- Error message will be inserted here -->
+        </div>
+        <button class="btn btn-secondary" onclick="closeError()">Close</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const fileName = document.getElementById('fileName');
+const generateBtn = document.getElementById('generateBtn');
+let selectedFile = null;
+
+// Click to browse
+uploadZone.addEventListener('click', () => {
+    fileInput.click();
+});
+
+// Drag and drop
+uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+});
+
+uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('drag-over');
+});
+
+uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFile(files[0]);
+    }
+});
+
+// File input change
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+    }
+});
+
+function handleFile(file) {
+    const validTypes = ['application/json', 'text/csv', 'text/plain'];
+    const validExtensions = ['.json', '.csv', '.txt'];
+
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+    if (!validExtensions.includes(fileExtension)) {
+        showError('Invalid file type. Please upload JSON, CSV, or TXT file.');
+        return;
+    }
+
+    selectedFile = file;
+    fileName.textContent = file.name;
+    fileInfo.style.display = 'block';
+    generateBtn.disabled = false;
+}
+
+function removeFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    fileInfo.style.display = 'none';
+    generateBtn.disabled = true;
+}
+
+// Form submission
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!selectedFile) {
+        showError('Please select a file first.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('generate_pdf', document.querySelector('input[name="generate_pdf"]').checked);
+    formData.append('generate_pitch', document.querySelector('input[name="generate_pitch"]').checked);
+
+    showProgress();
+
+    try {
+        const response = await fetch('/api/upload-generate', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        hideProgress();
+
+        if (result.success) {
+            showResults(result.files);
+        } else {
+            showError(result.message);
+        }
+    } catch (error) {
+        hideProgress();
+        showError('Failed to generate business plan: ' + error.message);
+    }
+});
+
+function showProgress() {
+    document.getElementById('progressModal').classList.add('active');
+}
+
+function hideProgress() {
+    document.getElementById('progressModal').classList.remove('active');
+}
+
+function showResults(files) {
+    let html = '<div class="download-section">';
+
+    if (files.markdown) {
+        html += `
+            <div class="download-item">
+                <div class="download-icon">📄</div>
+                <div class="download-info">
+                    <h4>Markdown Document</h4>
+                    <p>Editable business plan</p>
+                </div>
+                <a href="/api/download/markdown" class="btn btn-primary btn-sm">Download</a>
+            </div>
+        `;
+    }
+
+    if (files.pdf) {
+        html += `
+            <div class="download-item">
+                <div class="download-icon">📊</div>
+                <div class="download-info">
+                    <h4>PDF Document</h4>
+                    <p>Investor-ready business plan</p>
+                </div>
+                <a href="/api/download/pdf" class="btn btn-primary btn-sm">Download</a>
+            </div>
+        `;
+    }
+
+    if (files.pitch_deck) {
+        html += `
+            <div class="download-item">
+                <div class="download-icon">🎯</div>
+                <div class="download-info">
+                    <h4>Pitch Deck</h4>
+                    <p>Presentation slides</p>
+                </div>
+                <a href="/api/download/pitch_deck" class="btn btn-primary btn-sm">Download</a>
+            </div>
+        `;
+    }
+
+    html += '</div>';
+    html += '<p class="results-note">Your business plan has been generated successfully! Files are ready to download.</p>';
+
+    document.getElementById('resultsContent').innerHTML = html;
+    document.getElementById('resultsModal').classList.add('active');
+}
+
+function closeResults() {
+    document.getElementById('resultsModal').classList.remove('active');
+}
+
+function showError(message) {
+    document.getElementById('errorContent').innerHTML = `<p>${message}</p>`;
+    document.getElementById('errorModal').classList.add('active');
+}
+
+function closeError() {
+    document.getElementById('errorModal').classList.remove('active');
+}
+</script>
+{% endblock %}
