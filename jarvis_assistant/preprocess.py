@@ -63,7 +63,7 @@ class WhatsAppPreprocessor:
 
         for i, msg in enumerate(tqdm(messages)):
             text = msg.get('text') or msg.get('message') or msg.get('body') or ''
-            timestamp = msg.get('timestamp') or msg.get('date') or msg.get('time') or ''
+            timestamp = msg.get('timestamp') or msg.get('datetime') or msg.get('date') or msg.get('time') or ''
             msg_id = msg.get('id') or i
 
             if not text or len(text.strip()) < 5:
