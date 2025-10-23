@@ -20,6 +20,7 @@ class JarvisAssistant:
 
         self.rag = RAGEngine()
         self.rag.load_conversation_history()
+        self.debug_mode = False  # Show retrieved context
 
         print(f"✓ Jarvis ready for {config.USER_NAME}")
         print(f"✓ Memory loaded: {self.rag.memory.collection.count():,} facts indexed")
@@ -27,12 +28,14 @@ class JarvisAssistant:
 
     def print_help(self):
         """Print help message."""
-        print("""
+        debug_status = "ON" if self.debug_mode else "OFF"
+        print(f"""
 Available commands:
   /help       - Show this help message
   /stats      - Show memory statistics
   /history    - Show recent conversation history
   /clear      - Clear conversation history
+  /debug      - Toggle debug mode (currently {debug_status})
   /exit       - Exit Jarvis
 
 Ask anything about yourself, get advice, or have a conversation!
@@ -76,6 +79,13 @@ Ask anything about yourself, get advice, or have a conversation!
         elif command == "/clear":
             self.rag.clear_conversation_history()
 
+        elif command == "/debug":
+            self.debug_mode = not self.debug_mode
+            status = "ON" if self.debug_mode else "OFF"
+            print(f"\n✓ Debug mode: {status}")
+            if self.debug_mode:
+                print("  (Will show retrieved context for each query)\n")
+
         else:
             print(f"Unknown command: {command}")
             print("Type /help for available commands")
@@ -113,10 +123,18 @@ Ask anything about yourself, get advice, or have a conversation!
 
                 try:
                     result = self.rag.query(user_input)
+
+                    # Show retrieved context in debug mode
+                    if self.debug_mode:
+                        print(f"\n[DEBUG] Retrieved {result['metadata']['facts_retrieved']} memories:\n")
+                        for i, fact in enumerate(result['retrieved_facts'][:5], 1):
+                            print(f"  {i}. [{fact['type']}] {fact['content'][:150]}...")
+                        print("\n" + "="*60 + "\n")
+
                     print(result['response'])
 
                     # Show metadata in verbose mode
-                    if '--verbose' in sys.argv:
+                    if '--verbose' in sys.argv or self.debug_mode:
                         print(f"\n[Retrieved {result['metadata']['facts_retrieved']} memories]")
 
                 except Exception as e:

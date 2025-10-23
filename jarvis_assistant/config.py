@@ -10,6 +10,10 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Set environment variables to suppress warnings
+os.environ['ANONYMIZED_TELEMETRY'] = os.getenv('ANONYMIZED_TELEMETRY', 'False')
+os.environ['TOKENIZERS_PARALLELISM'] = os.getenv('TOKENIZERS_PARALLELISM', 'false')
+
 # Project paths
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
