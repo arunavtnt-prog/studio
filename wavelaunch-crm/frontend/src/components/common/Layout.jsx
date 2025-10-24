@@ -4,7 +4,7 @@ import {
   HomeIcon,
   UserGroupIcon,
   UsersIcon,
-  ChartBarIcon,
+  RocketLaunchIcon,
 } from '@heroicons/react/24/outline';
 
 /**
@@ -17,6 +17,7 @@ const Layout = ({ children }) => {
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon },
+    { name: 'Launch', href: '/launch', icon: RocketLaunchIcon },
     { name: 'Leads', href: '/leads', icon: UserGroupIcon },
     { name: 'Clients', href: '/clients', icon: UsersIcon },
   ];

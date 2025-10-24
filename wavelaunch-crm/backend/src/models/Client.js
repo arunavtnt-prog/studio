@@ -201,9 +201,64 @@ const Client = sequelize.define('Client', {
     defaultValue: false,
   },
 
+  // Launch Tracking (Pre-Launch CRM Focus)
+  expectedLaunchDate: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Target launch date for the brand',
+  },
+  actualLaunchDate: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Actual launch date (when it happens)',
+  },
+  launchReadinessScore: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    validate: {
+      min: 0,
+      max: 100,
+    },
+    comment: 'How ready they are to launch (0-100)',
+  },
+  launchBlockers: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+    comment: 'What is blocking them from launching',
+  },
+  checklistProgress: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      Foundation: { completed: 0, total: 0 },
+      Prep: { completed: 0, total: 0 },
+      Launch: { completed: 0, total: 0 },
+    },
+    comment: 'Checklist completion per stage',
+  },
+  daysInCurrentStage: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: 'Number of days in current journey stage',
+  },
+  isStuck: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    comment: 'Whether the client is stuck/stalled',
+  },
+  stuckReason: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Why they are stuck (if applicable)',
+  },
+  lastActivityDate: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Last meaningful activity (file upload, email, milestone)',
+  },
+
   // Status
   status: {
-    type: DataTypes.ENUM('Active', 'Inactive', 'Paused', 'Churned'),
+    type: DataTypes.ENUM('Active', 'Inactive', 'Paused', 'Churned', 'Launched'),
     defaultValue: 'Active',
   },
 }, {
@@ -215,6 +270,10 @@ const Client = sequelize.define('Client', {
     { fields: ['healthStatus'] },
     { fields: ['status'] },
     { fields: ['assignedTo'] },
+    { fields: ['expectedLaunchDate'] },
+    { fields: ['launchReadinessScore'] },
+    { fields: ['isStuck'] },
+    { fields: ['lastActivityDate'] },
   ],
 });
 
