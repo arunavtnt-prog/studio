@@ -1,6 +1,7 @@
 const express = require('express');
 const leadController = require('../controllers/leadController');
 const clientController = require('../controllers/clientController');
+const launchController = require('../controllers/launchController');
 
 /**
  * API Routes
@@ -28,6 +29,21 @@ router.delete('/clients/:id', clientController.deleteClient);
 router.post('/clients/:id/health-score', clientController.updateHealthScore);
 router.post('/clients/:id/deliverables', clientController.generateDeliverable);
 router.get('/clients/:id/stats', clientController.getClientStats);
+
+// ==================== LAUNCH MANAGEMENT ====================
+router.get('/launch/dashboard', launchController.getLaunchDashboard);
+router.get('/launch/clients', launchController.getClientsByReadiness);
+router.post('/launch/update-scores', launchController.updateAllScores);
+router.get('/launch/briefing', launchController.getDailyCEOBriefing);
+router.get('/launch/alerts', launchController.getAlertSummary);
+router.get('/launch/checklist/:clientId', launchController.getClientChecklist);
+router.post('/launch/checklist/:clientId/:itemId', launchController.markChecklistItem);
+router.get('/launch/checklist-templates', launchController.getChecklistTemplates);
+
+// ==================== GOOGLE SHEETS SYNC ====================
+router.post('/launch/sync-sheets', launchController.syncGoogleSheets);
+router.get('/launch/sync-status', launchController.getSyncStatus);
+router.post('/launch/test-sheets', launchController.testSheetsConnection);
 
 // Health check
 router.get('/health', (req, res) => {

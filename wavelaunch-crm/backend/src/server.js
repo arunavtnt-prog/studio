@@ -6,6 +6,9 @@ require('dotenv').config();
 
 const { testConnection, initDatabase } = require('./config/database');
 const routes = require('./routes');
+const sheetsService = require('./services/sheetsService');
+const launchReadinessService = require('./services/launchReadinessService');
+const checklistService = require('./services/checklistService');
 
 /**
  * Wavelaunch CRM Backend Server
@@ -52,6 +55,71 @@ app.use((error, req, res, next) => {
   });
 });
 
+// ==================== STARTUP AUTOMATIONS ====================
+/**
+ * Run Startup Automations
+ *
+ * Executes automated tasks when server starts:
+ * - Sync leads from Google Sheets
+ * - Update launch readiness scores
+ * - Update checklists
+ */
+const runStartupAutomations = async () => {
+  try {
+    console.log('\n🤖 Running startup automations...\n');
+
+    // 1. Google Sheets Sync
+    if (process.env.AUTO_SYNC_ON_STARTUP === 'true' && process.env.GOOGLE_SHEET_ID) {
+      console.log('📊 Syncing from Google Sheets...');
+      try {
+        const results = await sheetsService.syncFromSheet(
+          process.env.GOOGLE_SHEET_ID,
+          process.env.GOOGLE_SHEET_RANGE || 'Sheet1!A:Z',
+          process.env.AUTO_ANALYZE_NEW_LEADS === 'true'
+        );
+
+        if (results.newLeads > 0) {
+          console.log(`✓ Imported ${results.newLeads} new leads from Google Sheets`);
+        } else {
+          console.log('✓ Sheets synced (no new leads)');
+        }
+      } catch (error) {
+        console.warn('⚠ Google Sheets sync failed:', error.message);
+        console.warn('  Check your GOOGLE_SHEET_ID and credentials in .env');
+      }
+    }
+
+    // 2. Update Launch Readiness Scores
+    console.log('📊 Updating launch readiness scores...');
+    try {
+      const readinessResults = await launchReadinessService.updateAllReadinessScores();
+      console.log(`✓ Updated ${readinessResults.updated} client readiness scores`);
+      if (readinessResults.readyToLaunch > 0) {
+        console.log(`  🎉 ${readinessResults.readyToLaunch} client(s) ready to launch!`);
+      }
+      if (readinessResults.stuck > 0) {
+        console.log(`  ⚠ ${readinessResults.stuck} client(s) stuck/need attention`);
+      }
+    } catch (error) {
+      console.warn('⚠ Readiness update failed:', error.message);
+    }
+
+    // 3. Update Checklists
+    console.log('✅ Updating checklists...');
+    try {
+      const checklistResults = await checklistService.updateAllChecklists();
+      console.log(`✓ Updated ${checklistResults.updated} client checklists`);
+    } catch (error) {
+      console.warn('⚠ Checklist update failed:', error.message);
+    }
+
+    console.log('\n✓ Startup automations complete\n');
+  } catch (error) {
+    console.error('⚠ Startup automations encountered errors:', error.message);
+    // Don't exit - server can still run even if automations fail
+  }
+};
+
 // ==================== SERVER INITIALIZATION ====================
 const startServer = async () => {
   try {
@@ -66,6 +134,9 @@ const startServer = async () => {
 
     // Initialize database (create tables)
     await initDatabase();
+
+    // Run startup automations
+    await runStartupAutomations();
 
     // Start server
     app.listen(PORT, () => {
