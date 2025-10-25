@@ -1,54 +1,210 @@
 const OpenAI = require('openai');
+const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 
 /**
- * LLM Service
+ * Multi-Provider LLM Service
  *
- * Handles all AI/LLM operations for the CRM:
- * - Lead application analysis and scoring
- * - Document generation (onboarding kits, monthly deliverables)
- * - Email sentiment analysis
- * - Content summarization
+ * Supports OpenAI, Claude (Anthropic), and Gemini (Google).
+ * Switch providers via LLM_PROVIDER env variable.
  *
- * CUSTOMIZATION POINTS:
- * - Modify prompts in each function to match your brand voice
- * - Adjust temperature and max_tokens for different use cases
- * - Add custom guidelines via the guidelines parameter
+ * Providers:
+ * - openai: GPT-4, GPT-3.5-turbo
+ * - claude: Claude 3.5 Sonnet, Opus, Haiku
+ * - gemini: Gemini 1.5 Pro, Flash
+ *
+ * Configuration via .env:
+ * - LLM_PROVIDER=openai|claude|gemini (default: openai)
+ * - LLM_MODEL=gpt-4-turbo-preview|claude-3-5-sonnet-20241022|gemini-1.5-pro-latest
+ * - OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_AI_API_KEY
  */
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+class LLMService {
+  constructor() {
+    this.provider = process.env.LLM_PROVIDER || 'openai';
+    this.model = process.env.LLM_MODEL;
+    this.maxTokens = parseInt(process.env.LLM_MAX_TOKENS) || 2000;
 
-const LLMService = {
+    // Initialize clients
+    this.clients = {};
+    this.initializeClients();
+  }
+
+  /**
+   * Initialize API Clients
+   */
+  initializeClients() {
+    // OpenAI
+    if (process.env.OPENAI_API_KEY) {
+      this.clients.openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+      if (!this.model && this.provider === 'openai') {
+        this.model = 'gpt-4-turbo-preview';
+      }
+    }
+
+    // Claude (Anthropic)
+    if (process.env.ANTHROPIC_API_KEY) {
+      this.clients.claude = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+      if (!this.model && this.provider === 'claude') {
+        this.model = 'claude-3-5-sonnet-20241022'; // Latest Claude model
+      }
+    }
+
+    // Gemini (Google)
+    if (process.env.GOOGLE_AI_API_KEY) {
+      this.clients.gemini = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+      if (!this.model && this.provider === 'gemini') {
+        this.model = 'gemini-1.5-pro-latest';
+      }
+    }
+
+    console.log(`✓ LLM Service initialized with provider: ${this.provider} (${this.model})`);
+
+    if (!this.clients[this.provider]) {
+      console.warn(`⚠ ${this.provider} client not initialized. Check API key in .env`);
+    }
+  }
+
+  /**
+   * Generate Completion (Unified Interface)
+   *
+   * @param {string} systemPrompt - System instructions
+   * @param {string} userPrompt - User message
+   * @param {Object} options - Additional options
+   * @returns {Promise<Object>} Generated result
+   */
+  async generateCompletion(systemPrompt, userPrompt, options = {}) {
+    const provider = options.provider || this.provider;
+    const model = options.model || this.model;
+    const temperature = options.temperature ?? 0.7;
+    const maxTokens = options.maxTokens || this.maxTokens;
+
+    switch (provider) {
+      case 'openai':
+        return await this.generateWithOpenAI(systemPrompt, userPrompt, { model, temperature, maxTokens, ...options });
+
+      case 'claude':
+        return await this.generateWithClaude(systemPrompt, userPrompt, { model, temperature, maxTokens, ...options });
+
+      case 'gemini':
+        return await this.generateWithGemini(systemPrompt, userPrompt, { model, temperature, maxTokens, ...options });
+
+      default:
+        throw new Error(`Unknown provider: ${provider}`);
+    }
+  }
+
+  /**
+   * Generate with OpenAI
+   */
+  async generateWithOpenAI(systemPrompt, userPrompt, options = {}) {
+    if (!this.clients.openai) {
+      throw new Error('OpenAI client not initialized. Add OPENAI_API_KEY to .env');
+    }
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ];
+
+    const params = {
+      model: options.model || 'gpt-4-turbo-preview',
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens || 2000,
+    };
+
+    if (options.responseFormat === 'json') {
+      params.response_format = { type: 'json_object' };
+    }
+
+    const response = await this.clients.openai.chat.completions.create(params);
+
+    return {
+      content: response.choices[0].message.content,
+      tokensUsed: response.usage.total_tokens,
+      provider: 'openai',
+      model: params.model,
+    };
+  }
+
+  /**
+   * Generate with Claude (Anthropic)
+   */
+  async generateWithClaude(systemPrompt, userPrompt, options = {}) {
+    if (!this.clients.claude) {
+      throw new Error('Claude client not initialized. Add ANTHROPIC_API_KEY to .env');
+    }
+
+    const params = {
+      model: options.model || 'claude-3-5-sonnet-20241022',
+      max_tokens: options.maxTokens || 2000,
+      temperature: options.temperature ?? 0.7,
+      system: systemPrompt,
+      messages: [
+        { role: 'user', content: userPrompt },
+      ],
+    };
+
+    const response = await this.clients.claude.messages.create(params);
+
+    return {
+      content: response.content[0].text,
+      tokensUsed: response.usage.input_tokens + response.usage.output_tokens,
+      provider: 'claude',
+      model: params.model,
+    };
+  }
+
+  /**
+   * Generate with Gemini (Google)
+   */
+  async generateWithGemini(systemPrompt, userPrompt, options = {}) {
+    if (!this.clients.gemini) {
+      throw new Error('Gemini client not initialized. Add GOOGLE_AI_API_KEY to .env');
+    }
+
+    const modelName = options.model || 'gemini-1.5-pro-latest';
+    const model = this.clients.gemini.getGenerativeModel({ model: modelName });
+
+    // Gemini doesn't have separate system prompt, so we prepend it
+    const combinedPrompt = `${systemPrompt}\n\n${userPrompt}`;
+
+    const generationConfig = {
+      temperature: options.temperature ?? 0.7,
+      maxOutputTokens: options.maxTokens || 2000,
+    };
+
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: combinedPrompt }] }],
+      generationConfig,
+    });
+
+    const response = result.response;
+
+    return {
+      content: response.text(),
+      tokensUsed: response.usageMetadata?.totalTokenCount || 0,
+      provider: 'gemini',
+      model: modelName,
+    };
+  }
+
   /**
    * Analyze Lead Application
    *
-   * Takes a lead's application data and performs:
-   * 1. Comprehensive summary
-   * 2. Sentiment analysis
-   * 3. Fit scoring (0-100)
-   * 4. Recommendations
-   *
-   * @param {Object} leadData - Lead application data
-   * @param {string} leadData.name - Applicant name
-   * @param {string} leadData.niche - Content niche
-   * @param {Object} leadData.followers - Follower counts
-   * @param {Object} leadData.engagement - Engagement metrics
-   * @param {string} leadData.summary - Applicant's summary
-   * @param {Object} leadData.customFormAnswers - Custom question answers
-   * @param {string} guidelines - Optional custom guidelines for analysis
-   * @returns {Promise<Object>} Analysis results
-   *
-   * TODO: Customize the analysis prompt with your specific criteria
-   * TODO: Add industry-specific scoring factors
-   * TODO: Integrate with your brand guidelines
+   * Works with any provider. Automatically handles JSON formatting.
    */
   async analyzeLeadApplication(leadData, guidelines = null) {
     try {
-      const prompt = `
-You are an expert creator analyst for Wavelaunch Studio, a premium creator business development agency.
+      const systemPrompt = 'You are an expert creator analyst for Wavelaunch Studio, a premium creator business development agency. Always respond with valid JSON.';
 
+      const userPrompt = `
 Analyze the following creator application and provide detailed insights:
 
 **Applicant Information:**
@@ -66,8 +222,8 @@ ${guidelines ? `\n**Custom Guidelines:**\n${guidelines}\n` : ''}
 Provide a JSON response with the following structure:
 {
   "summary": "A concise 2-3 sentence summary of this creator",
-  "sentiment": 0.75,  // 0-1 scale: how positive/enthusiastic is the application
-  "fitScore": 85,     // 0-100: how well they fit our program
+  "sentiment": 0.75,
+  "fitScore": 85,
   "strengths": ["strength1", "strength2", "strength3"],
   "concerns": ["concern1", "concern2"],
   "recommendations": "What we should do next with this lead",
@@ -84,26 +240,31 @@ Focus on:
 - Alignment with Wavelaunch Studio's premium positioning
 `;
 
-      const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert creator analyst. Always respond with valid JSON.',
-          },
-          { role: 'user', content: prompt },
-        ],
+      const result = await this.generateCompletion(systemPrompt, userPrompt, {
+        responseFormat: 'json',
         temperature: 0.7,
-        max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS) || 2000,
-        response_format: { type: 'json_object' },
       });
 
-      const analysis = JSON.parse(response.choices[0].message.content);
+      // Parse JSON response
+      let analysis;
+      try {
+        analysis = JSON.parse(result.content);
+      } catch (e) {
+        // Some providers might not perfectly format JSON, extract it
+        const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          analysis = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('Failed to parse JSON response');
+        }
+      }
 
       return {
         success: true,
         analysis,
-        tokensUsed: response.usage.total_tokens,
+        tokensUsed: result.tokensUsed,
+        provider: result.provider,
+        model: result.model,
       };
     } catch (error) {
       console.error('Error analyzing lead application:', error);
@@ -112,21 +273,10 @@ Focus on:
         error: error.message,
       };
     }
-  },
+  }
 
   /**
    * Generate Onboarding Kit
-   *
-   * Creates a personalized onboarding document for a newly onboarded client.
-   * Uses client profile data and optional templates/guidelines.
-   *
-   * @param {Object} clientData - Client profile data
-   * @param {string} template - Optional template/guidelines
-   * @returns {Promise<Object>} Generated document content
-   *
-   * TODO: Add your onboarding kit template in the prompt or via template parameter
-   * TODO: Customize sections based on your onboarding process
-   * TODO: Add company-specific resources and links
    */
   async generateOnboardingKit(clientData, template = null) {
     try {
@@ -145,7 +295,9 @@ We're thrilled to have you join our creator community. This kit will guide you t
 7. Resources and tools
 `;
 
-      const prompt = `
+      const systemPrompt = 'You are a professional onboarding specialist creating welcoming and clear documentation.';
+
+      const userPrompt = `
 Create a personalized onboarding kit for a new client at Wavelaunch Studio.
 
 **Client Information:**
@@ -167,25 +319,16 @@ Include:
 - Timeline expectations for their journey stage
 `;
 
-      const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional onboarding specialist creating welcoming and clear documentation.',
-          },
-          { role: 'user', content: prompt },
-        ],
+      const result = await this.generateCompletion(systemPrompt, userPrompt, {
         temperature: 0.8,
-        max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS) || 2000,
       });
-
-      const content = response.choices[0].message.content;
 
       return {
         success: true,
-        content,
-        tokensUsed: response.usage.total_tokens,
+        content: result.content,
+        tokensUsed: result.tokensUsed,
+        provider: result.provider,
+        model: result.model,
       };
     } catch (error) {
       console.error('Error generating onboarding kit:', error);
@@ -194,27 +337,16 @@ Include:
         error: error.message,
       };
     }
-  },
+  }
 
   /**
    * Generate Monthly Deliverable Document
-   *
-   * Creates month-specific deliverables based on client progress and stage.
-   * Highly customizable with prompts and templates.
-   *
-   * @param {Object} clientData - Client profile
-   * @param {string} month - Target month (e.g., "January 2024")
-   * @param {Object} context - Additional context (milestones, metrics, etc.)
-   * @param {string} template - Custom template/guidelines
-   * @returns {Promise<Object>} Generated document
-   *
-   * TODO: Define your monthly deliverable structure
-   * TODO: Add metrics and KPIs specific to each journey stage
-   * TODO: Customize based on client's niche and project type
    */
   async generateMonthlyDeliverable(clientData, month, context = {}, template = null) {
     try {
-      const prompt = `
+      const systemPrompt = 'You are a business strategist creating detailed deliverable reports.';
+
+      const userPrompt = `
 Generate a monthly deliverable document for a Wavelaunch Studio client.
 
 **Client:** ${clientData.name}
@@ -241,26 +373,17 @@ Create a comprehensive monthly deliverable document that includes:
 Format in clean Markdown. Be specific and actionable.
 `;
 
-      const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a business strategist creating detailed deliverable reports.',
-          },
-          { role: 'user', content: prompt },
-        ],
+      const result = await this.generateCompletion(systemPrompt, userPrompt, {
         temperature: 0.7,
-        max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS) || 2000,
       });
-
-      const content = response.choices[0].message.content;
 
       return {
         success: true,
-        content,
+        content: result.content,
         month,
-        tokensUsed: response.usage.total_tokens,
+        tokensUsed: result.tokensUsed,
+        provider: result.provider,
+        model: result.model,
       };
     } catch (error) {
       console.error('Error generating monthly deliverable:', error);
@@ -269,20 +392,16 @@ Format in clean Markdown. Be specific and actionable.
         error: error.message,
       };
     }
-  },
+  }
 
   /**
    * Analyze Email Sentiment
-   *
-   * Extracts sentiment, urgency, and key topics from email content.
-   *
-   * @param {string} emailBody - Email content
-   * @param {string} subject - Email subject
-   * @returns {Promise<Object>} Sentiment analysis results
    */
   async analyzeEmailSentiment(emailBody, subject = '') {
     try {
-      const prompt = `
+      const systemPrompt = 'You are an email analysis expert. Always respond with valid JSON.';
+
+      const userPrompt = `
 Analyze the sentiment and key information from this email:
 
 **Subject:** ${subject}
@@ -292,35 +411,40 @@ ${emailBody.substring(0, 2000)} ${emailBody.length > 2000 ? '...' : ''}
 
 Provide a JSON response:
 {
-  "sentiment": 0.75,  // 0=very negative, 0.5=neutral, 1=very positive
-  "sentimentLabel": "Positive",  // Positive, Neutral, or Negative
-  "urgency": "Medium",  // Low, Medium, High
+  "sentiment": 0.75,
+  "sentimentLabel": "Positive",
+  "urgency": "Medium",
   "keyTopics": ["topic1", "topic2"],
-  "requiresAction": false,  // Does this need a response or action?
-  "category": "General"  // General, Support, Milestone, Contract, Financial, Other
+  "requiresAction": false,
+  "category": "General"
 }
 `;
 
-      const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an email analysis expert. Always respond with valid JSON.',
-          },
-          { role: 'user', content: prompt },
-        ],
+      const result = await this.generateCompletion(systemPrompt, userPrompt, {
+        responseFormat: 'json',
         temperature: 0.3,
-        max_tokens: 500,
-        response_format: { type: 'json_object' },
+        maxTokens: 500,
       });
 
-      const analysis = JSON.parse(response.choices[0].message.content);
+      // Parse JSON
+      let analysis;
+      try {
+        analysis = JSON.parse(result.content);
+      } catch (e) {
+        const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          analysis = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('Failed to parse JSON response');
+        }
+      }
 
       return {
         success: true,
         analysis,
-        tokensUsed: response.usage.total_tokens,
+        tokensUsed: result.tokensUsed,
+        provider: result.provider,
+        model: result.model,
       };
     } catch (error) {
       console.error('Error analyzing email sentiment:', error);
@@ -329,39 +453,27 @@ Provide a JSON response:
         error: error.message,
       };
     }
-  },
+  }
 
   /**
    * Summarize Content
-   *
-   * Generic function to summarize any text content.
-   *
-   * @param {string} content - Content to summarize
-   * @param {number} maxLength - Maximum summary length in words
-   * @returns {Promise<Object>} Summary
    */
   async summarizeContent(content, maxLength = 100) {
     try {
-      const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a summarization expert. Create concise summaries in ${maxLength} words or less.`,
-          },
-          {
-            role: 'user',
-            content: `Summarize the following:\n\n${content.substring(0, 3000)}`,
-          },
-        ],
+      const systemPrompt = `You are a summarization expert. Create concise summaries in ${maxLength} words or less.`;
+      const userPrompt = `Summarize the following:\n\n${content.substring(0, 3000)}`;
+
+      const result = await this.generateCompletion(systemPrompt, userPrompt, {
         temperature: 0.5,
-        max_tokens: Math.ceil(maxLength * 1.5),
+        maxTokens: Math.ceil(maxLength * 1.5),
       });
 
       return {
         success: true,
-        summary: response.choices[0].message.content,
-        tokensUsed: response.usage.total_tokens,
+        summary: result.content,
+        tokensUsed: result.tokensUsed,
+        provider: result.provider,
+        model: result.model,
       };
     } catch (error) {
       console.error('Error summarizing content:', error);
@@ -370,7 +482,19 @@ Provide a JSON response:
         error: error.message,
       };
     }
-  },
-};
+  }
 
-module.exports = LLMService;
+  /**
+   * Get Provider Info
+   */
+  getProviderInfo() {
+    return {
+      currentProvider: this.provider,
+      currentModel: this.model,
+      availableProviders: Object.keys(this.clients),
+      maxTokens: this.maxTokens,
+    };
+  }
+}
+
+module.exports = new LLMService();
