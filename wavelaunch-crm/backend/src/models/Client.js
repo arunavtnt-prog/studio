@@ -69,10 +69,24 @@ const Client = sequelize.define('Client', {
     comment: 'Brand guidelines, colors, fonts, logos (references to file IDs)',
   },
 
-  // Journey Progress
+  // Journey Progress (Updated for 8-Month Program)
   journeyStage: {
-    type: DataTypes.ENUM('Foundation', 'Prep', 'Launch', 'Growth & Expansion'),
-    defaultValue: 'Foundation',
+    type: DataTypes.ENUM(
+      'Month 1 - Foundation Excellence',
+      'Month 2 - Brand Readiness & Productization',
+      'Month 3 - Market Entry Preparation',
+      'Month 4 - Sales Engine & Launch Infrastructure',
+      'Month 5 - Pre-Launch Mastery',
+      'Month 6 - Soft Launch Execution',
+      'Month 7 - Scaling & Growth Systems',
+      'Month 8 - Full Launch & Market Domination',
+      // Legacy stages (for backward compatibility)
+      'Foundation',
+      'Prep',
+      'Launch',
+      'Growth & Expansion'
+    ),
+    defaultValue: 'Month 1 - Foundation Excellence',
     allowNull: false,
   },
   journeyProgress: {
@@ -183,7 +197,7 @@ const Client = sequelize.define('Client', {
     allowNull: true,
   },
 
-  // Onboarding
+  // Onboarding (Legacy - keep for backward compatibility)
   onboardedAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
@@ -199,6 +213,162 @@ const Client = sequelize.define('Client', {
   onboardingKitAcknowledged: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
+  },
+
+  // 8-Month Onboarding Program
+  currentMonth: {
+    type: DataTypes.INTEGER,
+    defaultValue: 1,
+    validate: {
+      min: 1,
+      max: 8,
+    },
+    comment: 'Current month in the 8-month onboarding program',
+  },
+  completedMonths: {
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
+    defaultValue: [],
+    comment: 'Array of completed month numbers [1, 2, 3, ...]',
+  },
+  monthProgress: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      month1: { status: 'active', completedAt: null, approvedAt: null, unlockedAt: null },
+      month2: { status: 'locked', completedAt: null, approvedAt: null, unlockedAt: null },
+      month3: { status: 'locked', completedAt: null, approvedAt: null, unlockedAt: null },
+      month4: { status: 'locked', completedAt: null, approvedAt: null, unlockedAt: null },
+      month5: { status: 'locked', completedAt: null, approvedAt: null, unlockedAt: null },
+      month6: { status: 'locked', completedAt: null, approvedAt: null, unlockedAt: null },
+      month7: { status: 'locked', completedAt: null, approvedAt: null, unlockedAt: null },
+      month8: { status: 'locked', completedAt: null, approvedAt: null, unlockedAt: null },
+    },
+    comment: 'Status tracking for each month (active, locked, completed)',
+  },
+
+  // Brand & Product Information
+  brandInfo: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    comment: JSON.stringify({
+      niche: 'String - e.g., Fitness & Wellness, Beauty, Tech',
+      productType: 'String - e.g., Physical Product, Digital Course, Subscription Box',
+      skus: ['Array of SKUs'],
+      pricePoints: { low: 0, mid: 0, high: 0 },
+      valueProposition: 'String - What makes them unique',
+      targetAudience: {
+        demographics: 'String',
+        psychographics: 'String',
+        painPoints: ['Array of pain points'],
+      },
+    }),
+  },
+
+  // Market Position
+  marketPosition: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    comment: JSON.stringify({
+      competitors: [{ name: 'String', strength: 'String' }],
+      differentiators: ['Array of differentiators'],
+      marketSize: 'String',
+    }),
+  },
+
+  // Content & Community
+  contentAssets: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    comment: JSON.stringify({
+      platforms: ['Instagram', 'YouTube', 'TikTok'],
+      contentLibrarySize: 0,
+      postingFrequency: { instagram: 'daily', youtube: 'weekly' },
+      topPerformingContent: ['Array of URLs or descriptions'],
+    }),
+  },
+  communityMetrics: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    comment: JSON.stringify({
+      emailListSize: 0,
+      engagementRate: 0,
+      affiliateCount: 0,
+      communityPlatform: 'Discord, Circle, etc.',
+    }),
+  },
+
+  // Revenue & Goals
+  revenueGoals: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    comment: JSON.stringify({
+      softLaunchTarget: 0,
+      fullLaunchTarget: 0,
+      year1Revenue: 0,
+      ltvGoal: 0,
+      profitMarginTarget: 0,
+    }),
+  },
+  launchTimeline: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    comment: JSON.stringify({
+      onboardingStartDate: null,
+      softLaunchDate: null,
+      fullLaunchDate: null,
+    }),
+  },
+
+  // Tech Stack
+  techStack: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    comment: JSON.stringify({
+      ecommercePlatform: 'Shopify, WooCommerce, etc.',
+      emailProvider: 'Klaviyo, ConvertKit, etc.',
+      crmPlatform: 'String',
+      analyticsTools: ['Array of tools'],
+      adPlatforms: ['Array of platforms'],
+    }),
+  },
+
+  // Team Structure
+  teamStructure: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    comment: JSON.stringify({
+      inHouseTeam: [{ role: 'String', name: 'String' }],
+      contractors: [{ role: 'String', name: 'String' }],
+      agencyPartners: [{ role: 'String', company: 'String' }],
+    }),
+  },
+
+  // Business Plan
+  businessPlan: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    comment: JSON.stringify({
+      uploaded: false,
+      uploadedAt: null,
+      filePath: null,
+      parsedData: {},
+      lastUpdated: null,
+    }),
+  },
+
+  // Onboarding Kit Documents (40 documents total, 5 per month)
+  onboardingKits: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      month1: { generated: false, generatedAt: null, documents: [] },
+      month2: { generated: false, generatedAt: null, documents: [] },
+      month3: { generated: false, generatedAt: null, documents: [] },
+      month4: { generated: false, generatedAt: null, documents: [] },
+      month5: { generated: false, generatedAt: null, documents: [] },
+      month6: { generated: false, generatedAt: null, documents: [] },
+      month7: { generated: false, generatedAt: null, documents: [] },
+      month8: { generated: false, generatedAt: null, documents: [] },
+    },
+    comment: 'Stores all generated documents and their status for all 8 months',
   },
 
   // Launch Tracking (Pre-Launch CRM Focus)

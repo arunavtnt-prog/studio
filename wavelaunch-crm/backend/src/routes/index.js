@@ -2,6 +2,7 @@ const express = require('express');
 const leadController = require('../controllers/leadController');
 const clientController = require('../controllers/clientController');
 const launchController = require('../controllers/launchController');
+const onboardingKitController = require('../controllers/onboardingKitController');
 
 /**
  * API Routes
@@ -44,6 +45,24 @@ router.get('/launch/checklist-templates', launchController.getChecklistTemplates
 router.post('/launch/sync-sheets', launchController.syncGoogleSheets);
 router.get('/launch/sync-status', launchController.getSyncStatus);
 router.post('/launch/test-sheets', launchController.testSheetsConnection);
+
+// ==================== ONBOARDING KIT (8-MONTH PROGRAM) ====================
+// Generate documents
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/generate', onboardingKitController.generateMonthDocuments);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/generate', onboardingKitController.generateSingleDocument);
+
+// Get documents
+router.get('/clients/:clientId/onboarding-kit/progress', onboardingKitController.getOnboardingProgress);
+router.get('/clients/:clientId/onboarding-kit/month/:monthNumber', onboardingKitController.getMonthDocuments);
+router.get('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber', onboardingKitController.getSingleDocument);
+
+// Update document status
+router.put('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/status', onboardingKitController.updateDocumentStatus);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/revision', onboardingKitController.requestRevision);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/approve', onboardingKitController.approveDocument);
+
+// Month completion
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/complete', onboardingKitController.completeMonth);
 
 // Health check
 router.get('/health', (req, res) => {
