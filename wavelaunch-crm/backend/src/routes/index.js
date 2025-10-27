@@ -1,7 +1,28 @@
 const express = require('express');
+const multer = require('multer');
 const leadController = require('../controllers/leadController');
 const clientController = require('../controllers/clientController');
 const launchController = require('../controllers/launchController');
+const onboardingKitController = require('../controllers/onboardingKitController');
+const businessPlanController = require('../controllers/businessPlanController');
+const pdfController = require('../controllers/pdfController');
+const analyticsController = require('../controllers/analyticsController');
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: 'uploads/temp/',
+  limits: {
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760, // 10MB default
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, DOCX, DOC, and TXT files are allowed.'));
+    }
+  },
+});
 
 /**
  * API Routes
@@ -44,6 +65,39 @@ router.get('/launch/checklist-templates', launchController.getChecklistTemplates
 router.post('/launch/sync-sheets', launchController.syncGoogleSheets);
 router.get('/launch/sync-status', launchController.getSyncStatus);
 router.post('/launch/test-sheets', launchController.testSheetsConnection);
+
+// ==================== ONBOARDING KIT (8-MONTH PROGRAM) ====================
+// Generate documents
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/generate', onboardingKitController.generateMonthDocuments);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/generate', onboardingKitController.generateSingleDocument);
+
+// Get documents
+router.get('/clients/:clientId/onboarding-kit/progress', onboardingKitController.getOnboardingProgress);
+router.get('/clients/:clientId/onboarding-kit/month/:monthNumber', onboardingKitController.getMonthDocuments);
+router.get('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber', onboardingKitController.getSingleDocument);
+
+// Update document status
+router.put('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/status', onboardingKitController.updateDocumentStatus);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/revision', onboardingKitController.requestRevision);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/approve', onboardingKitController.approveDocument);
+
+// Month completion
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/complete', onboardingKitController.completeMonth);
+
+// PDF Generation
+router.get('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/pdf', pdfController.generateDocumentPDF);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/generate-pdfs', pdfController.generateMonthPDFs);
+
+// ==================== BUSINESS PLAN UPLOAD ====================
+router.post('/clients/:clientId/business-plan/upload', upload.single('businessPlan'), businessPlanController.uploadBusinessPlan);
+router.get('/clients/:clientId/business-plan', businessPlanController.getBusinessPlan);
+router.delete('/clients/:clientId/business-plan', businessPlanController.deleteBusinessPlan);
+
+// ==================== ANALYTICS ====================
+router.get('/analytics/overview', analyticsController.getOverviewAnalytics);
+router.get('/analytics/client/:clientId', analyticsController.getClientAnalytics);
+router.get('/analytics/document-performance', analyticsController.getDocumentPerformance);
+router.post('/analytics/track', analyticsController.trackEvent);
 
 // Health check
 router.get('/health', (req, res) => {

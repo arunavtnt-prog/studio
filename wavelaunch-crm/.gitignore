@@ -21,8 +21,9 @@ build/
 *.sqlite3
 *.db
 
-# Uploads
+# Uploads (but keep directory structure)
 uploads/
+!uploads/**/.gitkeep
 temp/
 
 # IDE
