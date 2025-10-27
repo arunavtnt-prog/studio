@@ -5,6 +5,7 @@ const clientController = require('../controllers/clientController');
 const launchController = require('../controllers/launchController');
 const onboardingKitController = require('../controllers/onboardingKitController');
 const businessPlanController = require('../controllers/businessPlanController');
+const pdfController = require('../controllers/pdfController');
 
 // Configure multer for file uploads
 const upload = multer({
@@ -81,6 +82,10 @@ router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docN
 
 // Month completion
 router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/complete', onboardingKitController.completeMonth);
+
+// PDF Generation
+router.get('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/pdf', pdfController.generateDocumentPDF);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/generate-pdfs', pdfController.generateMonthPDFs);
 
 // ==================== BUSINESS PLAN UPLOAD ====================
 router.post('/clients/:clientId/business-plan/upload', upload.single('businessPlan'), businessPlanController.uploadBusinessPlan);

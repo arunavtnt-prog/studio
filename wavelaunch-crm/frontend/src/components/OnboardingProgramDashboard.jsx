@@ -214,6 +214,9 @@ const OnboardingProgramDashboard = ({ clientId }) => {
       {viewerOpen && selectedDocument && (
         <DocumentViewer
           document={selectedDocument}
+          clientId={clientId}
+          monthNumber={selectedDocument.monthNumber}
+          docNumber={selectedDocument.docNumber}
           onClose={() => setViewerOpen(false)}
           onApprove={() => handleApproveDocument(selectedDocument.monthNumber, selectedDocument.docNumber)}
           onRequestRevision={(notes) =>

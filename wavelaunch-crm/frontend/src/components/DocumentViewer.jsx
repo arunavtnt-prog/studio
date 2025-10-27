@@ -5,6 +5,7 @@ import {
   CheckCircleIcon,
   PencilSquareIcon,
   ArrowDownTrayIcon,
+  DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline';
 
 /**
@@ -13,9 +14,10 @@ import {
  * Full-screen modal for viewing document content with markdown rendering.
  * Includes actions for approval, revision requests, and downloads.
  */
-const DocumentViewer = ({ document, onClose, onApprove, onRequestRevision }) => {
+const DocumentViewer = ({ document, onClose, onApprove, onRequestRevision, clientId, monthNumber, docNumber }) => {
   const [revisionMode, setRevisionMode] = useState(false);
   const [revisionNotes, setRevisionNotes] = useState('');
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   if (!document) return null;
 
@@ -39,6 +41,50 @@ const DocumentViewer = ({ document, onClose, onApprove, onRequestRevision }) => 
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!clientId || !monthNumber || !docNumber) {
+      alert('Missing required information for PDF generation');
+      return;
+    }
+
+    try {
+      setDownloadingPDF(true);
+
+      // Call API to generate and download PDF
+      const response = await fetch(
+        `http://localhost:5000/api/v1/clients/${clientId}/onboarding-kit/month/${monthNumber}/document/${docNumber}/pdf`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob();
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const a = window.document.createElement('a');
+      a.href = url;
+      a.download = `${document.name.replace(/\s+/g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setDownloadingPDF(false);
+    }
   };
 
   const isApproved = document.status === 'approved';
@@ -145,6 +191,14 @@ const DocumentViewer = ({ document, onClose, onApprove, onRequestRevision }) => 
         {!revisionMode && (
           <div className="border-t border-gray-200 p-6 bg-gray-50 flex items-center justify-between">
             <div className="flex space-x-3">
+              <button
+                onClick={handleDownloadPDF}
+                disabled={downloadingPDF}
+                className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors"
+              >
+                <DocumentArrowDownIcon className="h-5 w-5" />
+                <span>{downloadingPDF ? 'Generating PDF...' : 'Download PDF'}</span>
+              </button>
               <button
                 onClick={handleDownload}
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
