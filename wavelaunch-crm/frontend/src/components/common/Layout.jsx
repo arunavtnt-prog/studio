@@ -5,6 +5,7 @@ import {
   UserGroupIcon,
   UsersIcon,
   RocketLaunchIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 
 /**
@@ -20,6 +21,7 @@ const Layout = ({ children }) => {
     { name: 'Launch', href: '/launch', icon: RocketLaunchIcon },
     { name: 'Leads', href: '/leads', icon: UserGroupIcon },
     { name: 'Clients', href: '/clients', icon: UsersIcon },
+    { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
   ];
 
   const isActive = (href) => {
