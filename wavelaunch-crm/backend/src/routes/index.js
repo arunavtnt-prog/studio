@@ -7,6 +7,9 @@ const onboardingKitController = require('../controllers/onboardingKitController'
 const businessPlanController = require('../controllers/businessPlanController');
 const pdfController = require('../controllers/pdfController');
 const analyticsController = require('../controllers/analyticsController');
+const aiEnhancementsController = require('../controllers/aiEnhancementsController');
+const exportController = require('../controllers/exportController');
+const webhookController = require('../controllers/webhookController');
 
 // Configure multer for file uploads
 const upload = multer({
@@ -98,6 +101,22 @@ router.get('/analytics/overview', analyticsController.getOverviewAnalytics);
 router.get('/analytics/client/:clientId', analyticsController.getClientAnalytics);
 router.get('/analytics/document-performance', analyticsController.getDocumentPerformance);
 router.post('/analytics/track', analyticsController.trackEvent);
+router.get('/analytics/export', exportController.exportAllClientsAnalytics);
+
+// ==================== AI ENHANCEMENTS ====================
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/summarize', aiEnhancementsController.summarizeDocument);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/quality-check', aiEnhancementsController.qualityCheck);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/suggest-revisions', aiEnhancementsController.suggestRevisions);
+router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docNumber/extract-metrics', aiEnhancementsController.extractMetrics);
+
+// ==================== DATA EXPORT ====================
+router.get('/clients/:clientId/export/:format', exportController.exportClientData);
+
+// ==================== WEBHOOKS ====================
+router.post('/clients/:clientId/webhooks', webhookController.registerWebhook);
+router.get('/clients/:clientId/webhooks', webhookController.getWebhooks);
+router.delete('/clients/:clientId/webhooks/:webhookId', webhookController.deleteWebhook);
+router.post('/clients/:clientId/webhooks/:webhookId/test', webhookController.testWebhook);
 
 // Health check
 router.get('/health', (req, res) => {

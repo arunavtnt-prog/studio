@@ -7,6 +7,9 @@
 const { Client } = require('../models');
 const businessPlanParser = require('../services/businessPlanParser');
 const emailNotificationService = require('../services/emailNotificationService');
+const slackService = require('../services/slackService');
+const discordService = require('../services/discordService');
+const webhookService = require('../services/webhookService');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -79,6 +82,26 @@ exports.uploadBusinessPlan = async (req, res) => {
 
     // Send confirmation email
     await emailNotificationService.sendBusinessPlanUploadedEmail(client, parseResult.parsedData);
+
+    // Send Slack notification (async)
+    slackService.notifyBusinessPlanUploaded(client.name, file.originalname).catch((error) => {
+      console.error('Error sending Slack notification:', error);
+    });
+
+    // Send Discord notification (async)
+    discordService.notifyBusinessPlanUploaded(client.name, file.originalname).catch((error) => {
+      console.error('Error sending Discord notification:', error);
+    });
+
+    // Trigger webhooks (async)
+    webhookService.triggerWebhook(client.id, 'business_plan.uploaded', {
+      clientId: client.id,
+      clientName: client.name,
+      fileName: file.originalname,
+      uploadedAt: new Date().toISOString(),
+    }).catch((error) => {
+      console.error('Error triggering webhooks:', error);
+    });
 
     res.json({
       success: true,

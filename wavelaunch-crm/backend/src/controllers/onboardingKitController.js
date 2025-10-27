@@ -9,6 +9,9 @@ const { Client } = require('../models');
 const onboardingKitGenerator = require('../services/onboardingKitGenerator');
 const emailNotificationService = require('../services/emailNotificationService');
 const analyticsService = require('../services/analyticsService');
+const slackService = require('../services/slackService');
+const discordService = require('../services/discordService');
+const webhookService = require('../services/webhookService');
 const {
   getMonthDocuments,
   getDocument,
@@ -127,6 +130,31 @@ exports.generateMonthDocuments = async (req, res) => {
     // Send email notification (async, don't wait for it)
     emailNotificationService.sendMonthUnlockedEmail(client, month).catch((error) => {
       console.error('Error sending month unlocked email:', error);
+    });
+
+    // Send Slack notification (async)
+    result.documents.forEach((doc) => {
+      slackService.notifyDocumentGenerated(client.name, doc.name, month).catch((error) => {
+        console.error('Error sending Slack notification:', error);
+      });
+    });
+
+    // Send Discord notification (async)
+    result.documents.forEach((doc) => {
+      discordService.notifyDocumentGenerated(client.name, doc.name, month).catch((error) => {
+        console.error('Error sending Discord notification:', error);
+      });
+    });
+
+    // Trigger webhooks (async)
+    webhookService.triggerWebhook(client.id, 'documents.generated', {
+      clientId: client.id,
+      clientName: client.name,
+      monthNumber: month,
+      documentsCount: result.generatedCount,
+      documents: result.documents.map(d => ({ name: d.name, status: 'generated' })),
+    }).catch((error) => {
+      console.error('Error triggering webhooks:', error);
     });
 
     res.json({
@@ -567,6 +595,27 @@ exports.requestRevision = async (req, res) => {
       console.error('Error sending revision request email:', error);
     });
 
+    // Send Slack notification (async)
+    slackService.notifyRevisionRequested(client.name, documentTemplate.name, month, notes).catch((error) => {
+      console.error('Error sending Slack notification:', error);
+    });
+
+    // Send Discord notification (async)
+    discordService.notifyRevisionRequested(client.name, documentTemplate.name, month, notes).catch((error) => {
+      console.error('Error sending Discord notification:', error);
+    });
+
+    // Trigger webhooks (async)
+    webhookService.triggerWebhook(client.id, 'document.revision_requested', {
+      clientId: client.id,
+      clientName: client.name,
+      monthNumber: month,
+      documentName: documentTemplate.name,
+      revisionNotes: notes,
+    }).catch((error) => {
+      console.error('Error triggering webhooks:', error);
+    });
+
     res.json({
       success: true,
       data: documentMeta,
@@ -637,6 +686,26 @@ exports.approveDocument = async (req, res) => {
       success: true,
     });
 
+    // Send Slack notification (async)
+    slackService.notifyDocumentApproved(client.name, documentMeta.name, month).catch((error) => {
+      console.error('Error sending Slack notification:', error);
+    });
+
+    // Send Discord notification (async)
+    discordService.notifyDocumentApproved(client.name, documentMeta.name, month).catch((error) => {
+      console.error('Error sending Discord notification:', error);
+    });
+
+    // Trigger webhooks (async)
+    webhookService.triggerWebhook(client.id, 'document.approved', {
+      clientId: client.id,
+      clientName: client.name,
+      monthNumber: month,
+      documentName: documentMeta.name,
+    }).catch((error) => {
+      console.error('Error triggering webhooks:', error);
+    });
+
     // Check if all documents approved -> update month completion
     const allApproved = monthData.documents.every((d) => d.status === 'approved');
     if (allApproved) {
@@ -668,6 +737,24 @@ exports.approveDocument = async (req, res) => {
         monthProgress,
         completedMonths,
         currentMonth: month < 8 ? month + 1 : 8,
+      });
+
+      // Send month completion notifications (async)
+      slackService.notifyMonthCompleted(client.name, month).catch((error) => {
+        console.error('Error sending Slack notification:', error);
+      });
+
+      discordService.notifyMonthCompleted(client.name, month).catch((error) => {
+        console.error('Error sending Discord notification:', error);
+      });
+
+      webhookService.triggerWebhook(client.id, 'month.completed', {
+        clientId: client.id,
+        clientName: client.name,
+        monthNumber: month,
+        completedAt: new Date().toISOString(),
+      }).catch((error) => {
+        console.error('Error triggering webhooks:', error);
       });
     }
 
