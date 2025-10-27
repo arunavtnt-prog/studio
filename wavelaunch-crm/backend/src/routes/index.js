@@ -1,8 +1,26 @@
 const express = require('express');
+const multer = require('multer');
 const leadController = require('../controllers/leadController');
 const clientController = require('../controllers/clientController');
 const launchController = require('../controllers/launchController');
 const onboardingKitController = require('../controllers/onboardingKitController');
+const businessPlanController = require('../controllers/businessPlanController');
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: 'uploads/temp/',
+  limits: {
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760, // 10MB default
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, DOCX, DOC, and TXT files are allowed.'));
+    }
+  },
+});
 
 /**
  * API Routes
@@ -63,6 +81,11 @@ router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/document/:docN
 
 // Month completion
 router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/complete', onboardingKitController.completeMonth);
+
+// ==================== BUSINESS PLAN UPLOAD ====================
+router.post('/clients/:clientId/business-plan/upload', upload.single('businessPlan'), businessPlanController.uploadBusinessPlan);
+router.get('/clients/:clientId/business-plan', businessPlanController.getBusinessPlan);
+router.delete('/clients/:clientId/business-plan', businessPlanController.deleteBusinessPlan);
 
 // Health check
 router.get('/health', (req, res) => {

@@ -7,6 +7,7 @@
 
 const { Client } = require('../models');
 const onboardingKitGenerator = require('../services/onboardingKitGenerator');
+const emailNotificationService = require('../services/emailNotificationService');
 const {
   getMonthDocuments,
   getDocument,
@@ -90,6 +91,11 @@ exports.generateMonthDocuments = async (req, res) => {
     await client.update({
       onboardingKits,
       onboardingKitGenerated: true, // Legacy field
+    });
+
+    // Send email notification (async, don't wait for it)
+    emailNotificationService.sendMonthUnlockedEmail(client, month).catch((error) => {
+      console.error('Error sending month unlocked email:', error);
     });
 
     res.json({
@@ -503,6 +509,11 @@ exports.requestRevision = async (req, res) => {
     documentMeta.revisionNotes = notes || '';
 
     await client.update({ onboardingKits });
+
+    // Send email notification to Wavelaunch team (async)
+    emailNotificationService.sendRevisionRequestedEmail(client, month, documentTemplate.name, notes).catch((error) => {
+      console.error('Error sending revision request email:', error);
+    });
 
     res.json({
       success: true,
