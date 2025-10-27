@@ -12,6 +12,7 @@ const Email = require('./Email');
 const Milestone = require('./Milestone');
 const HealthScoreLog = require('./HealthScoreLog');
 const ActivityLog = require('./ActivityLog');
+const AnalyticsEvent = require('./AnalyticsEvent');
 
 /**
  * Define Model Relationships
@@ -65,6 +66,10 @@ Lead.hasMany(ActivityLog, {
   as: 'activityLogs',
 });
 
+// Client <-> AnalyticsEvents (One-to-Many)
+Client.hasMany(AnalyticsEvent, { foreignKey: 'clientId', as: 'analyticsEvents' });
+AnalyticsEvent.belongsTo(Client, { foreignKey: 'clientId', as: 'client' });
+
 module.exports = {
   Lead,
   Client,
@@ -73,4 +78,5 @@ module.exports = {
   Milestone,
   HealthScoreLog,
   ActivityLog,
+  AnalyticsEvent,
 };

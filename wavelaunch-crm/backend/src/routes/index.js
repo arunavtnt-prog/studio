@@ -6,6 +6,7 @@ const launchController = require('../controllers/launchController');
 const onboardingKitController = require('../controllers/onboardingKitController');
 const businessPlanController = require('../controllers/businessPlanController');
 const pdfController = require('../controllers/pdfController');
+const analyticsController = require('../controllers/analyticsController');
 
 // Configure multer for file uploads
 const upload = multer({
@@ -91,6 +92,12 @@ router.post('/clients/:clientId/onboarding-kit/month/:monthNumber/generate-pdfs'
 router.post('/clients/:clientId/business-plan/upload', upload.single('businessPlan'), businessPlanController.uploadBusinessPlan);
 router.get('/clients/:clientId/business-plan', businessPlanController.getBusinessPlan);
 router.delete('/clients/:clientId/business-plan', businessPlanController.deleteBusinessPlan);
+
+// ==================== ANALYTICS ====================
+router.get('/analytics/overview', analyticsController.getOverviewAnalytics);
+router.get('/analytics/client/:clientId', analyticsController.getClientAnalytics);
+router.get('/analytics/document-performance', analyticsController.getDocumentPerformance);
+router.post('/analytics/track', analyticsController.trackEvent);
 
 // Health check
 router.get('/health', (req, res) => {

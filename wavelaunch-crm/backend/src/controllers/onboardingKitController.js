@@ -8,6 +8,7 @@
 const { Client } = require('../models');
 const onboardingKitGenerator = require('../services/onboardingKitGenerator');
 const emailNotificationService = require('../services/emailNotificationService');
+const analyticsService = require('../services/analyticsService');
 const {
   getMonthDocuments,
   getDocument,
@@ -54,14 +55,44 @@ exports.generateMonthDocuments = async (req, res) => {
 
     // Generate all documents for the month
     console.log(`Generating all Month ${month} documents for client: ${client.name}`);
+
+    // Track generation start
+    const startTime = Date.now();
+
     const result = await onboardingKitGenerator.generateMonthDocuments(client, month);
 
     if (!result.success) {
+      // Track generation failure
+      analyticsService.trackEvent({
+        eventType: 'document_generation_failed',
+        clientId: client.id,
+        monthNumber: month,
+        success: false,
+        errorMessage: result.error,
+        durationMs: Date.now() - startTime,
+      });
+
       return res.status(500).json({
         success: false,
         error: result.error,
       });
     }
+
+    // Track generation completion for each document
+    const duration = Date.now() - startTime;
+    result.documents.forEach((doc) => {
+      analyticsService.trackEvent({
+        eventType: 'document_generation_completed',
+        clientId: client.id,
+        monthNumber: month,
+        documentNumber: doc.docNumber || 1,
+        documentName: doc.name,
+        durationMs: duration / result.documents.length,
+        tokensUsed: doc.tokensUsed,
+        llmProvider: doc.provider,
+        success: true,
+      });
+    });
 
     // Update client's onboardingKits data
     const onboardingKits = client.onboardingKits || {};
@@ -329,6 +360,16 @@ exports.getSingleDocument = async (req, res) => {
         documentMeta.status = 'viewed';
       }
       await client.update({ onboardingKits });
+
+      // Track document view
+      analyticsService.trackEvent({
+        eventType: 'document_viewed',
+        clientId: client.id,
+        monthNumber: month,
+        documentNumber: doc,
+        documentName: documentMeta.name,
+        success: true,
+      });
     }
 
     res.json({
@@ -510,6 +551,17 @@ exports.requestRevision = async (req, res) => {
 
     await client.update({ onboardingKits });
 
+    // Track revision request
+    analyticsService.trackEvent({
+      eventType: 'document_revision_requested',
+      clientId: client.id,
+      monthNumber: month,
+      documentNumber: doc,
+      documentName: documentMeta.name,
+      metadata: { revisionNotes: notes },
+      success: true,
+    });
+
     // Send email notification to Wavelaunch team (async)
     emailNotificationService.sendRevisionRequestedEmail(client, month, documentTemplate.name, notes).catch((error) => {
       console.error('Error sending revision request email:', error);
@@ -574,6 +626,16 @@ exports.approveDocument = async (req, res) => {
     documentMeta.revisionRequested = false;
 
     await client.update({ onboardingKits });
+
+    // Track document approval
+    analyticsService.trackEvent({
+      eventType: 'document_approved',
+      clientId: client.id,
+      monthNumber: month,
+      documentNumber: doc,
+      documentName: documentMeta.name,
+      success: true,
+    });
 
     // Check if all documents approved -> update month completion
     const allApproved = monthData.documents.every((d) => d.status === 'approved');
@@ -750,6 +812,24 @@ exports.completeMonth = async (req, res) => {
       currentMonth: month < 8 ? month + 1 : 8,
       journeyStage: `Month ${month < 8 ? month + 1 : 8} - ${getMonthDocuments(month < 8 ? month + 1 : 8)?.name.split(' - ')[1]}`,
     });
+
+    // Track month completion
+    analyticsService.trackEvent({
+      eventType: 'month_completed',
+      clientId: client.id,
+      monthNumber: month,
+      success: true,
+    });
+
+    // Track month unlocked (next month)
+    if (month < 8) {
+      analyticsService.trackEvent({
+        eventType: 'month_unlocked',
+        clientId: client.id,
+        monthNumber: month + 1,
+        success: true,
+      });
+    }
 
     res.json({
       success: true,
