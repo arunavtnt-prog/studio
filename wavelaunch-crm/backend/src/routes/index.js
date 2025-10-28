@@ -3,6 +3,7 @@ const multer = require('multer');
 const leadController = require('../controllers/leadController');
 const clientController = require('../controllers/clientController');
 const credentialController = require('../controllers/credentialController');
+const timelineController = require('../controllers/timelineController');
 const launchController = require('../controllers/launchController');
 const onboardingKitController = require('../controllers/onboardingKitController');
 const businessPlanController = require('../controllers/businessPlanController');
@@ -19,11 +20,19 @@ const upload = multer({
     fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760, // 10MB default
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain'];
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'text/plain',
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only PDF, DOCX, DOC, and TXT files are allowed.'));
+      cb(new Error('Invalid file type. Allowed: PDF, DOCX, DOC, TXT, CSV, XLS, XLSX'));
     }
   },
 });
@@ -38,6 +47,11 @@ const upload = multer({
 const router = express.Router();
 
 // ==================== LEADS ====================
+// Lead Import (must come before :id routes to avoid conflicts)
+router.post('/leads/import', upload.single('file'), leadController.importLeads);
+router.get('/leads/import/template', leadController.downloadTemplate);
+
+// Lead CRUD
 router.post('/leads', leadController.createLead);
 router.get('/leads', leadController.getLeads);
 router.get('/leads/:id', leadController.getLead);
@@ -74,6 +88,10 @@ router.delete('/credentials/:id', credentialController.deleteCredential);
 
 // Verify credential
 router.post('/credentials/:id/verify', credentialController.verifyCredential);
+
+// ==================== TIMELINE & ROADMAP (Epic 2, Story 2.1) ====================
+router.get('/clients/:clientId/timeline', timelineController.getClientTimeline);
+router.get('/timeline/roadmap', timelineController.getAllClientsRoadmap);
 
 // ==================== LAUNCH MANAGEMENT ====================
 router.get('/launch/dashboard', launchController.getLaunchDashboard);
