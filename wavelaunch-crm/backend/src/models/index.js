@@ -13,6 +13,7 @@ const Milestone = require('./Milestone');
 const HealthScoreLog = require('./HealthScoreLog');
 const ActivityLog = require('./ActivityLog');
 const AnalyticsEvent = require('./AnalyticsEvent');
+const Credential = require('./Credential');
 
 /**
  * Define Model Relationships
@@ -70,6 +71,11 @@ Lead.hasMany(ActivityLog, {
 Client.hasMany(AnalyticsEvent, { foreignKey: 'clientId', as: 'analyticsEvents' });
 AnalyticsEvent.belongsTo(Client, { foreignKey: 'clientId', as: 'client' });
 
+// Client <-> Credentials (One-to-Many)
+// Epic 1, Story 1.4: Securely store login links
+Client.hasMany(Credential, { foreignKey: 'clientId', as: 'credentials' });
+Credential.belongsTo(Client, { foreignKey: 'clientId', as: 'client' });
+
 module.exports = {
   Lead,
   Client,
@@ -79,4 +85,5 @@ module.exports = {
   HealthScoreLog,
   ActivityLog,
   AnalyticsEvent,
+  Credential,
 };

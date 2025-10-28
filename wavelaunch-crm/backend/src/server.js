@@ -9,6 +9,7 @@ const routes = require('./routes');
 const sheetsService = require('./services/sheetsService');
 const launchReadinessService = require('./services/launchReadinessService');
 const checklistService = require('./services/checklistService');
+const { validateEncryptionSetup } = require('./utils/encryption');
 
 /**
  * Wavelaunch CRM Backend Server
@@ -124,6 +125,15 @@ const runStartupAutomations = async () => {
 const startServer = async () => {
   try {
     console.log('\n🚀 Starting Wavelaunch CRM Server...\n');
+
+    // Validate encryption setup (Epic 1, Story 1.4)
+    console.log('🔐 Validating credential encryption system...');
+    const encryptionValid = validateEncryptionSetup();
+    if (!encryptionValid) {
+      console.error('❌ Credential encryption setup failed. Check ENCRYPTION_MASTER_KEY in .env');
+      console.error('   Generate a secure key: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"');
+      process.exit(1);
+    }
 
     // Test database connection
     const dbConnected = await testConnection();

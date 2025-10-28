@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const leadController = require('../controllers/leadController');
 const clientController = require('../controllers/clientController');
+const credentialController = require('../controllers/credentialController');
 const launchController = require('../controllers/launchController');
 const onboardingKitController = require('../controllers/onboardingKitController');
 const businessPlanController = require('../controllers/businessPlanController');
@@ -53,6 +54,26 @@ router.delete('/clients/:id', clientController.deleteClient);
 router.post('/clients/:id/health-score', clientController.updateHealthScore);
 router.post('/clients/:id/deliverables', clientController.generateDeliverable);
 router.get('/clients/:id/stats', clientController.getClientStats);
+
+// ==================== CREDENTIALS (Epic 1, Story 1.4) ====================
+// Create credential
+router.post('/credentials', credentialController.createCredential);
+router.post('/clients/:clientId/credentials', credentialController.createCredential);
+
+// Get credentials
+router.get('/clients/:clientId/credentials', credentialController.getClientCredentials);
+router.get('/credentials/:id', credentialController.getCredential);
+router.get('/credentials/attention', credentialController.getCredentialsNeedingAttention);
+
+// Reveal credential (decrypt for copy)
+router.post('/credentials/:id/reveal', credentialController.revealCredential);
+
+// Update & delete
+router.patch('/credentials/:id', credentialController.updateCredential);
+router.delete('/credentials/:id', credentialController.deleteCredential);
+
+// Verify credential
+router.post('/credentials/:id/verify', credentialController.verifyCredential);
 
 // ==================== LAUNCH MANAGEMENT ====================
 router.get('/launch/dashboard', launchController.getLaunchDashboard);
