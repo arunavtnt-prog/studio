@@ -1,4 +1,4 @@
-const { Client, Lead, File, Email, Milestone, HealthScoreLog, ActivityLog } = require('../models');
+const { Client, Lead, File, Email, Milestone, HealthScoreLog, ActivityLog, Credential } = require('../models');
 const automationService = require('../services/automationService');
 const healthScoreService = require('../services/healthScoreService');
 const { Op } = require('sequelize');
@@ -17,6 +17,10 @@ const clientController = {
   /**
    * Create New Client (or Convert from Lead)
    * POST /api/v1/clients
+   *
+   * Epic 1, Story 1.3: Add Creator/Brand
+   * AC1: Full form for all fields
+   * AC2: Status 'Onboarding' default (journeyStage: 'Month 1 - Foundation Excellence')
    */
   async createClient(req, res) {
     try {
@@ -85,6 +89,11 @@ const clientController = {
   /**
    * Get All Clients
    * GET /api/v1/clients
+   *
+   * Epic 1, Story 1.1: View creator brand list
+   * AC1: Show Creator/Brand/Journey Status/Health Score
+   * AC2: Filter by status
+   * AC3: Links to Profile
    */
   async getClients(req, res) {
     try {
@@ -140,6 +149,10 @@ const clientController = {
   /**
    * Get Single Client (Full Profile)
    * GET /api/v1/clients/:id
+   *
+   * Epic 1, Story 1.2: View Creator Profile
+   * AC1: Sections: Creator, Brand, Ops Links, Comm History
+   * AC2: Status & Health at top
    */
   async getClient(req, res) {
     try {
@@ -186,6 +199,13 @@ const clientController = {
             as: 'lead',
             required: false,
           },
+          {
+            model: Credential,
+            as: 'credentials',
+            attributes: ['id', 'platform', 'platformCategory', 'accountIdentifier', 'status', 'priority', 'loginUrl', 'lastAccessedAt', 'createdAt'],
+            order: [['priority', 'DESC'], ['platform', 'ASC']],
+            required: false,
+          },
         ],
       });
 
@@ -212,6 +232,10 @@ const clientController = {
   /**
    * Update Client
    * PATCH /api/v1/clients/:id
+   *
+   * Epic 1, Story 1.5: Edit Creator Profile fields
+   * AC1: All fields editable
+   * AC2: Audit log for sensitive changes
    */
   async updateClient(req, res) {
     try {
@@ -226,48 +250,204 @@ const clientController = {
         });
       }
 
-      const previousStage = client.journeyStage;
-      const previousProgress = client.journeyProgress;
+      // Track previous values for sensitive fields
+      const previousValues = {
+        journeyStage: client.journeyStage,
+        journeyProgress: client.journeyProgress,
+        status: client.status,
+        healthStatus: client.healthStatus,
+        contractStatus: client.contractStatus,
+        revenue: client.revenue,
+        monthlyRecurring: client.monthlyRecurring,
+        email: client.email,
+        phone: client.phone,
+        assignedTo: client.assignedTo,
+        expectedLaunchDate: client.expectedLaunchDate,
+      };
 
       await client.update(updates);
 
-      // Log significant changes
-      if (updates.journeyStage && updates.journeyStage !== previousStage) {
-        await ActivityLog.create({
+      // Epic 1, Story 1.5, AC2: Comprehensive audit logging for sensitive changes
+      const auditLogs = [];
+
+      // Journey Stage Changes
+      if (updates.journeyStage && updates.journeyStage !== previousValues.journeyStage) {
+        auditLogs.push({
           entityType: 'Client',
           entityId: client.id,
           activityType: 'stage_changed',
           title: `Journey stage: ${updates.journeyStage}`,
-          description: `Progressed from ${previousStage} to ${updates.journeyStage}`,
-          metadata: { previousStage, newStage: updates.journeyStage },
+          description: `Progressed from ${previousValues.journeyStage} to ${updates.journeyStage}`,
+          metadata: { previousStage: previousValues.journeyStage, newStage: updates.journeyStage },
           isAutomated: false,
           icon: 'arrow-up',
           importance: 'High',
         });
       }
 
-      if (updates.journeyProgress && updates.journeyProgress !== previousProgress) {
-        await ActivityLog.create({
+      // Progress Updates
+      if (updates.journeyProgress !== undefined && updates.journeyProgress !== previousValues.journeyProgress) {
+        auditLogs.push({
           entityType: 'Client',
           entityId: client.id,
           activityType: 'progress_updated',
           title: `Progress: ${updates.journeyProgress}%`,
-          description: `Journey progress updated`,
-          metadata: { previousProgress, newProgress: updates.journeyProgress },
+          description: `Journey progress updated from ${previousValues.journeyProgress}% to ${updates.journeyProgress}%`,
+          metadata: { previousProgress: previousValues.journeyProgress, newProgress: updates.journeyProgress },
           isAutomated: false,
           icon: 'trending-up',
           importance: 'Medium',
         });
       }
 
+      // Status Changes
+      if (updates.status && updates.status !== previousValues.status) {
+        auditLogs.push({
+          entityType: 'Client',
+          entityId: client.id,
+          activityType: 'status_changed',
+          title: `Status changed to ${updates.status}`,
+          description: `Client status updated from ${previousValues.status} to ${updates.status}`,
+          metadata: { previousStatus: previousValues.status, newStatus: updates.status },
+          isAutomated: false,
+          icon: 'flag',
+          importance: 'High',
+        });
+      }
+
+      // Health Status Changes
+      if (updates.healthStatus && updates.healthStatus !== previousValues.healthStatus) {
+        auditLogs.push({
+          entityType: 'Client',
+          entityId: client.id,
+          activityType: 'health_status_changed',
+          title: `Health: ${updates.healthStatus}`,
+          description: `Health status changed from ${previousValues.healthStatus} to ${updates.healthStatus}`,
+          metadata: { previousHealth: previousValues.healthStatus, newHealth: updates.healthStatus },
+          isAutomated: false,
+          icon: updates.healthStatus === 'Green' ? 'check-circle' : updates.healthStatus === 'Yellow' ? 'exclamation-circle' : 'x-circle',
+          importance: 'High',
+        });
+      }
+
+      // Contract Status Changes
+      if (updates.contractStatus && updates.contractStatus !== previousValues.contractStatus) {
+        auditLogs.push({
+          entityType: 'Client',
+          entityId: client.id,
+          activityType: 'contract_status_changed',
+          title: `Contract: ${updates.contractStatus}`,
+          description: `Contract status changed from ${previousValues.contractStatus} to ${updates.contractStatus}`,
+          metadata: { previousStatus: previousValues.contractStatus, newStatus: updates.contractStatus },
+          isAutomated: false,
+          icon: 'document',
+          importance: 'High',
+        });
+      }
+
+      // Revenue Changes (Sensitive Financial Data)
+      if (updates.revenue !== undefined && updates.revenue !== previousValues.revenue) {
+        auditLogs.push({
+          entityType: 'Client',
+          entityId: client.id,
+          activityType: 'revenue_updated',
+          title: 'Revenue updated',
+          description: `Total revenue changed from $${previousValues.revenue} to $${updates.revenue}`,
+          metadata: { previousRevenue: previousValues.revenue, newRevenue: updates.revenue },
+          isAutomated: false,
+          icon: 'currency-dollar',
+          importance: 'Medium',
+        });
+      }
+
+      // Monthly Recurring Revenue Changes
+      if (updates.monthlyRecurring !== undefined && updates.monthlyRecurring !== previousValues.monthlyRecurring) {
+        auditLogs.push({
+          entityType: 'Client',
+          entityId: client.id,
+          activityType: 'mrr_updated',
+          title: 'MRR updated',
+          description: `Monthly recurring revenue changed from $${previousValues.monthlyRecurring} to $${updates.monthlyRecurring}`,
+          metadata: { previousMRR: previousValues.monthlyRecurring, newMRR: updates.monthlyRecurring },
+          isAutomated: false,
+          icon: 'currency-dollar',
+          importance: 'Medium',
+        });
+      }
+
+      // Contact Information Changes (Sensitive PII)
+      if (updates.email && updates.email !== previousValues.email) {
+        auditLogs.push({
+          entityType: 'Client',
+          entityId: client.id,
+          activityType: 'email_changed',
+          title: 'Email address updated',
+          description: `Email changed from ${previousValues.email} to ${updates.email}`,
+          metadata: { previousEmail: previousValues.email, newEmail: updates.email },
+          isAutomated: false,
+          icon: 'mail',
+          importance: 'High',
+        });
+      }
+
+      if (updates.phone && updates.phone !== previousValues.phone) {
+        auditLogs.push({
+          entityType: 'Client',
+          entityId: client.id,
+          activityType: 'phone_changed',
+          title: 'Phone number updated',
+          description: `Phone changed`,
+          metadata: { changed: true },
+          isAutomated: false,
+          icon: 'phone',
+          importance: 'Medium',
+        });
+      }
+
+      // Assignment Changes
+      if (updates.assignedTo && updates.assignedTo !== previousValues.assignedTo) {
+        auditLogs.push({
+          entityType: 'Client',
+          entityId: client.id,
+          activityType: 'assignment_changed',
+          title: 'Account manager changed',
+          description: `Client reassigned`,
+          metadata: { previousAssignedTo: previousValues.assignedTo, newAssignedTo: updates.assignedTo },
+          isAutomated: false,
+          icon: 'user-group',
+          importance: 'High',
+        });
+      }
+
+      // Launch Date Changes
+      if (updates.expectedLaunchDate && updates.expectedLaunchDate !== previousValues.expectedLaunchDate) {
+        auditLogs.push({
+          entityType: 'Client',
+          entityId: client.id,
+          activityType: 'launch_date_changed',
+          title: 'Expected launch date updated',
+          description: `Launch date changed`,
+          metadata: { previousDate: previousValues.expectedLaunchDate, newDate: updates.expectedLaunchDate },
+          isAutomated: false,
+          icon: 'calendar',
+          importance: 'High',
+        });
+      }
+
+      // Bulk create all audit logs
+      if (auditLogs.length > 0) {
+        await ActivityLog.bulkCreate(auditLogs);
+      }
+
       // Recalculate health score if relevant fields changed
-      if (updates.projectStatus || updates.contractStatus || updates.journeyProgress) {
+      if (updates.projectStatus || updates.contractStatus || updates.journeyProgress || updates.status) {
         await healthScoreService.updateClientHealthScore(client.id);
       }
 
       res.json({
         success: true,
         data: await Client.findByPk(id),
+        auditLogsCreated: auditLogs.length,
       });
     } catch (error) {
       console.error('Error updating client:', error);
