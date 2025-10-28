@@ -1,7 +1,8 @@
 const { Client, Lead, File, Email, Milestone, HealthScoreLog, ActivityLog, Credential } = require('../models');
 const automationService = require('../services/automationService');
 const healthScoreService = require('../services/healthScoreService');
-const { Op } = require('sequelize');
+const { Op, sequelize } = require('sequelize');
+const { sequelize: db } = require('../config/database');
 
 /**
  * Client Controller
@@ -94,6 +95,13 @@ const clientController = {
    * AC1: Show Creator/Brand/Journey Status/Health Score
    * AC2: Filter by status
    * AC3: Links to Profile
+   *
+   * Epic 2, Story 2.3: View Health Score on lists
+   * AC1: Visual indicator (Green/Yellow/Red)
+   *
+   * Epic 2, Story 2.4: Filter/sort List by Health Score
+   * AC1: 'Red' at top (when sortBy=healthScore)
+   * AC2: Filter for 'Yellow'/'Red'
    */
   async getClients(req, res) {
     try {
@@ -105,12 +113,20 @@ const clientController = {
         sortBy = 'createdAt',
         order = 'DESC',
         limit = 50,
+        prioritizeAtRisk = 'false', // Epic 2, Story 2.4: Show at-risk clients first
       } = req.query;
 
       const where = {};
 
       if (status) where.status = status;
-      if (healthStatus) where.healthStatus = healthStatus;
+      if (healthStatus) {
+        // Epic 2, Story 2.4, AC2: Filter for Yellow/Red
+        if (Array.isArray(healthStatus)) {
+          where.healthStatus = healthStatus;
+        } else {
+          where.healthStatus = healthStatus;
+        }
+      }
       if (journeyStage) where.journeyStage = journeyStage;
       if (search) {
         where[Op.or] = [
@@ -119,9 +135,36 @@ const clientController = {
         ];
       }
 
+      // Epic 2, Story 2.4, AC1: Sort with Red at top
+      let orderClause;
+      if (prioritizeAtRisk === 'true') {
+        // Custom sorting: Red first, then Yellow, then Green
+        // Also sort by health score within each status
+        orderClause = [
+          [
+            db.literal(`
+              CASE
+                WHEN "healthStatus" = 'Red' THEN 1
+                WHEN "healthStatus" = 'Yellow' THEN 2
+                WHEN "healthStatus" = 'Green' THEN 3
+                ELSE 4
+              END
+            `),
+            'ASC',
+          ],
+          ['healthScore', 'ASC'], // Within same status, show lowest scores first
+          ['name', 'ASC'],
+        ];
+      } else if (sortBy === 'healthScore') {
+        // When explicitly sorting by health score, lower scores (worse health) come first
+        orderClause = [[sortBy, order === 'DESC' ? 'DESC' : 'ASC']];
+      } else {
+        orderClause = [[sortBy, order]];
+      }
+
       const clients = await Client.findAll({
         where,
-        order: [[sortBy, order]],
+        order: orderClause,
         limit: parseInt(limit),
         include: [
           {

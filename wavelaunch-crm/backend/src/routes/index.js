@@ -3,6 +3,7 @@ const multer = require('multer');
 const leadController = require('../controllers/leadController');
 const clientController = require('../controllers/clientController');
 const credentialController = require('../controllers/credentialController');
+const timelineController = require('../controllers/timelineController');
 const launchController = require('../controllers/launchController');
 const onboardingKitController = require('../controllers/onboardingKitController');
 const businessPlanController = require('../controllers/businessPlanController');
@@ -74,6 +75,10 @@ router.delete('/credentials/:id', credentialController.deleteCredential);
 
 // Verify credential
 router.post('/credentials/:id/verify', credentialController.verifyCredential);
+
+// ==================== TIMELINE & ROADMAP (Epic 2, Story 2.1) ====================
+router.get('/clients/:clientId/timeline', timelineController.getClientTimeline);
+router.get('/timeline/roadmap', timelineController.getAllClientsRoadmap);
 
 // ==================== LAUNCH MANAGEMENT ====================
 router.get('/launch/dashboard', launchController.getLaunchDashboard);
